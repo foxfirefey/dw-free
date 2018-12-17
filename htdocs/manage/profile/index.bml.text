@@ -1,13 +1,9 @@
 ;; -*- coding: utf-8 -*-
-.chat.aolim=AOL IM
-
 .chat.googletalk=Google Talk
 
 .chat.icquin=ICQ UIN
 
 .chat.jabber=Jabber
-
-.chat.msnusername=MSN Username
 
 .chat.skype=Skype
 
@@ -57,10 +53,6 @@
 
 .error.noname=Your name is a required field.  You must provide a first name or nickname.
 
-.error.txt.require.number=If you're going to use text messaging, you must enter your phone number.
-
-.error.txt.require_provider=If you're going to use text messaging, you must select your service provider.  If yours isn't listed, please contact us with information about how your service's text messaging feature works so that we can add support for it.
-
 .error.year.notenoughdigits=Invalid birthday year.  Enter a 4-digit year.
 
 .error.year.outofrange=Invalid birthday year.
@@ -107,10 +99,6 @@
 
 .fn.link2=Link URL
 
-.fn.ljtalk.address=[[siteabbrev]] Chat Address
-
-.fn.ljtalk.status=[[siteabbrev]] Chat Status
-
 .fn.location=Location
 
 .fn.mutualfriends3=Mutual Lists
@@ -123,8 +111,6 @@
 
 .fn.servprov=Service Provider
 
-.fn.showljtalk=Who can see your online chat status?
-
 .fn.sitename2=Link Name
 
 .fn.state=State
@@ -132,10 +118,6 @@
 .fn.subscriberof=Subscriber list
 
 .fn.timezone=Timezone
-
-.fn.txtmsg=Allow text messaging from
-
-.fn.txtnum=Full phone number
 
 .fn.userpic2=Default icon
 
@@ -179,8 +161,6 @@
 
 .section.interests=Interests
 
-.section.textmsg=Text Messaging
-
 .security.visibility.access=Access List Only
 
 .security.visibility.everybody2=Everyone
@@ -205,15 +185,25 @@
 
 .services.delicious=Delicious Username
 
+.services.deviantart=DeviantArt Username
+
 .services.diigo=Diigo Username
 
 .services.etsy=Etsy Username
 
 .services.ffnet=FanFiction.net Username
 
+.services.github=GitHub Username
+
+.services.instagram=Instagram Username
+
 .services.last_fm=Last.fm Username
 
+.services.livejournal=LiveJournal Username
+
 .services.pinboard=Pinboard Username
+
+.services.pinterest=Pinterest Username
 
 .services.plurk=Plurk Username
 

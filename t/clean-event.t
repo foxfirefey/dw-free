@@ -4,7 +4,7 @@
 #
 # Authors:
 #      Afuna <coder.dw@afunamatata.com>
-#      Mark Smith <mark@dwscoalition.org>
+#      Mark Smith <mark@dreamwidth.org>
 #      Allen Petersen <allen@suberic.net>
 #
 # Copyright (c) 2013 by Dreamwidth Studios, LLC.
@@ -17,10 +17,9 @@
 use strict;
 use warnings;
 
-use Test::More tests => 41;
+use Test::More tests => 49;
 
-use lib "$ENV{LJHOME}/cgi-bin";
-BEGIN { require 'ljlib.pl'; }
+BEGIN { $LJ::_T_CONFIG = 1; require "$ENV{LJHOME}/cgi-bin/ljlib.pl"; }
 use LJ::CleanHTML;
 use HTMLCleaner;
 
@@ -44,10 +43,10 @@ $clean_post = qq{<div><table><tr><td></td></tr></table><span></span></div>};
 $clean->();
 is( $orig_post, $clean_post, "Tag outside a table isn't closed" );
 
-# this is a bit weird; we don't want to mess with tags in tables
-# so we just close it after, leading to this HTML
+# we don't want to mess with tags in tables
+# they should be restricted in scope to within the <td> tags they're in right now
 $orig_post  = qq{<div><table><tr><td><span></td></tr></table></div>};
-$clean_post = qq{<div><table><tr><td><span></td></tr></table></div></span>};
+$clean_post = qq{<div><table><tr><td><span></td></tr></table></div>};
 $clean->();
 is( $orig_post, $clean_post, "Non-table-related tag inside a table is open" );
 
@@ -277,6 +276,11 @@ note( "mismatched and misnested tags" );
     $clean->();
     is( $orig_post, $clean_post, "mismatched closing tags or misnested closing tags shouldn't be displayed" );
 
+    $orig_post = qq{before <i>in i<i/> after};
+    $clean_post = qq{before <i>in i<i> after</i></i>};
+    $clean->();
+    is( $orig_post, $clean_post, "self-closing tags that aren't actually self-closing should still be closed.");
+
     $entry_text = qq{before <strong><cut text="cut">in strong</strong>out strong</cut>after};
 
     $orig_post = $entry_text;
@@ -289,4 +293,42 @@ note( "mismatched and misnested tags" );
     $clean->();
     is ( $orig_post, $clean_post, "Full text of entry, with mismatched HTML tags within and with-out the cut" );
 }
+
+note("expected wordbreak behavior");
+
+$orig_post  = qq{wordbreak};
+$clean_post = qq{word<wbr />brea<wbr />k};
+$clean->({ wordlength => 4 });
+is( $orig_post, $clean_post, "Word break tags inserted where requested" );
+
+$orig_post  = qq{insert a word<wbr>break};
+$clean_post = qq{insert a word<wbr>break};
+$clean->();
+is( $orig_post, $clean_post, "Existing word break tags unchanged" );
+
+$orig_post  = qq{word-break};
+$clean_post = qq{word-<wbr />break};
+$clean->({ wordlength => 8 });
+is( $orig_post, $clean_post, "Word break tag prefers punctuation points" );
+
+$orig_post  = qq{&quot;entity&quot; test};
+$clean_post = qq{&quot;entity&quot; test};
+$clean->({ wordlength => 8 });
+is( $orig_post, $clean_post, "Word break handling of HTML entities OK" );
+
+$orig_post  = qq{multi-character-string test};
+$clean_post = qq{multi-character-<wbr />string test};
+$clean->({ wordlength => 20 });
+is( $orig_post, $clean_post, "Choose last punctuation in string" );
+
+$orig_post  = qq{"This_is_a_test_of_the_emergency_word_break_system."};
+$clean_post = qq{"This_is_a_test_of_the_emergency_word_br<wbr />eak_system."};
+$clean->({ wordlength => 40 });
+is( $orig_post, $clean_post, "Don't choose first character in string" );
+
+$orig_post  = qq{"Auto-linkify: http://www.dreamwidth.org/file/edit"};
+$clean_post = qq{"Auto-linkify: <a href="http://www.dreamwidth.org/file/edit">http://www.dreamwidth.org/file/edit</a>"};
+$clean->({ wordlength => 40 });
+is( $orig_post, $clean_post, "Don't mutilate URL entity markers" );
+
 1;

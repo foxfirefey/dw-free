@@ -15,8 +15,7 @@ package DW::Graphs;
 
 use strict;
 use warnings;
-use lib "$ENV{LJHOME}/cgi-bin";
-require 'ljlib.pl';
+require "$ENV{LJHOME}/cgi-bin/ljlib.pl";
 use GD::Graph;
 use GD::Graph::bars;
 use GD::Graph::hbars;
@@ -162,7 +161,7 @@ sub bar {
 
     # Default settings (can be over-ridden by config file)
     my %settings = (
-        x_label      => "\n$xlabel",
+        x_label      => "\r\n$xlabel",
         y_label      => $ylabel,
         show_values  => 1,
         values_space => 1,   # Pixels between top of bar and value above
@@ -244,7 +243,7 @@ sub bar2 {
 
     #Default settings (can be over-ridden by config file)
     my %settings = (
-        x_label         => "\n$xlabel",
+        x_label         => "\r\n$xlabel",
         y_label         => $ylabel,
         show_values    => 1,
         values_space   => 1,  # Pixels between top of bar and value above

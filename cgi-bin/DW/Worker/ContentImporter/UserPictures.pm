@@ -19,10 +19,10 @@ package DW::Worker::ContentImporter::UserPictures;
 use strict;
 use Storable qw(thaw);
 
+use DW::BlobStore;
 use DW::Worker::ContentImporter;
 
-use lib "$ENV{LJHOME}/cgi-bin";
-require 'ljlib.pl';
+require "$ENV{LJHOME}/cgi-bin/ljlib.pl";
 
 use base 'TheSchwartz::Worker';
 
@@ -59,14 +59,10 @@ sub work {
 
     return $fail->( "No Such User" ) unless $u;
 
-    my $mog = LJ::mogclient();
-    return $fail->( "Needs MogileFS" ) unless $mog;
-
-    my $raw_data = $mog->get_file_data( "import_upi:$u->{userid}" );
+    my $raw_data = DW::BlobStore->retrieve( temp => "import_upi:$u->{userid}" );
     return $fail->( "Data missing" ) unless $raw_data;
 
     my $data = thaw $$raw_data;
-
 
     foreach my $upi ( @{$data->{pics}} ) {
         next unless $opts->{selected}->{$upi->{id}};
@@ -74,7 +70,7 @@ sub work {
         DW::Worker::ContentImporter->import_userpic( $u, $opts, $upi );
     }
 
-    $mog->delete( "import_upi:$u->{userid}" );
+    DW::BlobStore->delete( temp => "import_upi:$u->{userid}" );
     my $email = <<EOF;
 Dear $u->{user},
 

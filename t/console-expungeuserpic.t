@@ -20,8 +20,7 @@ use warnings;
 
 use Test::More;
 
-use lib "$ENV{LJHOME}/cgi-bin";
-BEGIN { require 'ljlib.pl'; }
+BEGIN { $LJ::_T_CONFIG = 1; require "$ENV{LJHOME}/cgi-bin/ljlib.pl"; }
 use LJ::Console;
 use LJ::Test qw (temp_user temp_comm);
 local $LJ::T_NO_COMMAND_PRINT = 1;
@@ -47,7 +46,7 @@ die "No such file $upfile" unless -e $upfile;
 my $up;
 eval { $up = LJ::Userpic->create($u, data => $file_contents->($upfile)) };
 if ( $@ ) {
-    plan skip_all => "MogileFS failure: $@";
+    plan skip_all => "Storage failure: $@";
     exit 0;
 } else {
     plan tests => 3;

@@ -1,7 +1,10 @@
-@import "foundation/components/global", "foundation/components/buttons";
+@import "foundation/components/buttons";
 
-button, .button {
-    @include inset-shadow();
-    border-width: 1px;
-    border-style: solid;
+@include exports("button-custom") {
+  @if $include-html-button-classes {
+        button, .button {
+            @include inset-shadow();
+            @include radius($button-radius);
+        }
+    }
 }

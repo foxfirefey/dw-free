@@ -77,11 +77,10 @@ function print_stylesheet () {
 /*-------------------------------------
 
 
-	layout name: leftovers
-	latout type: tabularasa
+    layout name: leftovers
+    layout type: tabularasa
 
-	renoir.dreamwidth.org / vaisselle.livejournal.com
-	please do not redistribute
+    renoir.dreamwidth.org / vaisselle.livejournal.com
 
 
 -------------------------------------*/
@@ -132,6 +131,10 @@ div.navigation ul { display: inline; padding: 0; margin: 0; }
     letter-spacing: 0.5em;
     padding: 0;
     margin: 0;
+}
+
+#title a {
+    color: $*color_page_title;
 }
 
 #subtitle {

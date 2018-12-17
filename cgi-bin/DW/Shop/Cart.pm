@@ -160,8 +160,7 @@ sub new_cart {
         cartid    => $cartid,
         starttime => time(),
         userid    => $u ? $u->id : undef,
-        uniq      => LJ::UniqCookie->current_uniq,
-        ip        => BML::get_remote_ip(),
+        ip        => LJ::get_remote_ip(),
         state     => $DW::Shop::STATE_OPEN,
         items     => [],
         total_cash => 0.00,
@@ -171,6 +170,9 @@ sub new_cart {
         paymentmethod => 0, # we don't have a payment method yet
         email     => undef, # we don't have an email yet
     };
+
+    # if uniq undef, hash definition is totally wrecked, so set this separately
+    $cart->{uniq} = LJ::UniqCookie->current_uniq;
 
     # now, delete any old carts we don't need
     my $dbh = LJ::get_db_writer()
@@ -196,6 +198,9 @@ sub new_cart {
     # now persist the cart
     $cart->save;
     $u->{_cart} = $cart if $u;
+
+    DW::Stats::increment( 'dw.shop.cart.new', 1,
+            [ 'anonymous:' . ( $u ? 'no' : 'yes' ) ] );
 
     # we're done
     return $cart;
@@ -452,6 +457,9 @@ sub state {
     $_->cart_state_changed( $newstate ) foreach @{$self->items};
 
     LJ::Hooks::run_hooks( 'shop_cart_state_change', $self, $newstate );
+    DW::Stats::increment( 'dw.shop.cart.state_change', 1,
+            [ 'from_state:' . $DW::Shop::STATE_NAMES{$self->{state}},
+              'to_state:' . $DW::Shop::STATE_NAMES{$newstate} ] );
 
     $self->_notify_buyer_paid if $newstate == $DW::Shop::STATE_PROCESSED;
 
@@ -589,7 +597,7 @@ sub _notify_buyer_paid {
             receipturl => "$LJ::SITEROOT/shop/receipt?ordernum=" . $self->ordernum,
             sitename => $LJ::SITENAME,
         } ),
-    } );
+    } ) unless $LJ::T_SUPPRESS_EMAIL;
 }
 
 1;

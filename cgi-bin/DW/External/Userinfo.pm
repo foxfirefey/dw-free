@@ -17,15 +17,17 @@ use strict;
 
 use Carp qw/ croak /;
 use Storable qw/ nfreeze /;
-use LWPx::ParanoidAgent;
+
+use DW::External::Site;
+use DW::Stats;
 
 # timeout interval - to avoid hammering the remote site,
 # wait 30 minutes before trying again for this user
 sub wait { return 1800; }
 
 sub agent {
-    return LWPx::ParanoidAgent->new( agent => "$LJ::SITENAME Userinfo; $LJ::ADMIN_EMAIL",
-                                     max_size => 10240 );
+    return LJ::get_useragent( role => 'userinfo', agent => "$LJ::SITENAME Userinfo; $LJ::ADMIN_EMAIL",
+                          max_size => 10240 );
 }
 
 
@@ -111,6 +113,9 @@ sub save {
     my $user = $u->user;
     my $site = $u->site->{siteid};
 
+    my $stat_tags = [ "username:$user",
+                      "site:" . DW::External::Site->get_site_by_id( $site ) ];
+
     my $memkey = "ext_userinfo:$site:$user";
     my $dbh = LJ::get_db_writer() or return undef;
 
@@ -119,6 +124,7 @@ sub save {
                   " VALUES (?,?,?)", undef, $user, $site, $opts{timeout} );
         die $dbh->errstr if $dbh->err;
         LJ::MemCache::set( $memkey, '', $class->wait );
+        DW::Stats::increment( 'dw.worker.extacct.failure', 1, $stat_tags );
 
     } elsif ( $opts{type} && $opts{type} =~ /^[PYC]$/ ) {
     # save as journaltype and clear any timeout
@@ -126,6 +132,7 @@ sub save {
                   " VALUES (?,?,?,?)", undef, $user, $site, $opts{type}, undef );
         die $dbh->errstr if $dbh->err;
         LJ::MemCache::set( $memkey, $opts{type} );
+        DW::Stats::increment( 'dw.worker.extacct.success', 1, $stat_tags );
 
     } else {
         my $opterr = join ', ', map { "$_ => $opts{$_}" } keys %opts;
@@ -169,6 +176,12 @@ sub atomtype {
 
     # this is simple enough not to bother with an XML parser
     my $text = $res->content || '';
+
+    # first look for lj.rossia.org - different from other LJ sites
+    my ( $ljr ) = $text =~
+        m@<link rel='alternate' type='text/html' href='http://lj.rossia.org/([^/]+)@i;
+    return $ljr if $ljr; # community or users
+
     my ( $str ) = $text =~ m@<(?:lj|dw):journal ([^/]*)/>@i;
     return undef unless $str;
 
@@ -213,6 +226,7 @@ sub check_remote {
                 personal   => 'P',
                 syndicated => 'Y',
                 user       => 'P',
+                users      => 'P',
                );
 
     # invalid users don't always 404, so we also detect from title

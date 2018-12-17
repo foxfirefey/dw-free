@@ -63,6 +63,12 @@ Further, if you specify the delete and expungedel options at the same time,
 if the user is expunged, all of their data will be deleted from the source
 cluster.  THIS IS IRREVERSIBLE AND YOU WILL NOT BE ASKED FOR CONFIRMATION.
 
+=item --earlyexpunge
+
+Ignore the 31 day delay in --expungedel, so the user will be expunged no
+matter how long since they were deleted. This option is allowed on dev
+servers only.
+
 =item --jobserver=host:port
 
 Specify a job server to get tasks from.  In this mode, no other
@@ -85,8 +91,10 @@ use Getopt::Long;
 use Pod::Usage qw{pod2usage};
 use IO::Socket::INET;
 
-use lib "$ENV{LJHOME}/extlib/lib/perl5";
-use lib "$ENV{LJHOME}/cgi-bin";
+BEGIN {
+    require "$ENV{LJHOME}/cgi-bin/LJ/Directories.pm";
+    $LJ::_T_CONFIG = $ENV{DW_TEST};
+};
 
 # NOTE: these options are used both by Getopt::Long for command-line parsing
 # in single user move move, and also set by hand when in --jobserver mode,
@@ -98,6 +106,7 @@ my $opt_verbose = 1;
 my $opt_movemaster = 0;
 my $opt_prelocked = 0;
 my $opt_expungedel = 0;
+my $opt_earlyexpunge = 0;
 my $opt_ignorebit = 0;
 my $opt_verify = 0;
 my $opt_help = 0;
@@ -110,6 +119,7 @@ abortWithUsage() unless
                'movemaster|mm' => \$opt_movemaster, # use separate dedicated source
                'prelocked' => \$opt_prelocked, # don't do own locking; master does (harness, ljumover)
                'expungedel' => \$opt_expungedel, # mark as expunged if possible (+del to delete)
+               'earlyexpunge' => \$opt_earlyexpunge, # expunge without delay
                'ignorebit' => \$opt_ignorebit, # ignore move in progress bit cap (force)
                'verify' => \$opt_verify,  # slow verification pass (just for debug)
                'jobserver=s' => \$opt_jobserver,
@@ -132,7 +142,6 @@ sub multiMove {
     # the job server can keep giving us new jobs to move (or a stop command)
     # over and over, so we avoid perl exec times
     require "$ENV{'LJHOME'}/cgi-bin/ljlib.pl";
-    eval "use LJ::Cmdbuffer; 1;" or die $@;
 
     my $sock;
   ITER:
@@ -240,13 +249,17 @@ sub parseOpts {
     }
 
     foreach my $opt (qw(del destdel movemaster prelocked
-                        expungedel ignorebit verify)) {
+                        expungedel earlyexpunge ignorebit verify)) {
         next if defined $opts->{$opt};
         $opts->{$opt} = eval "\$opt_$opt";
     }
 
     # Have the same delete behavior despite of how the input delete parameter is specified: by 'delete=1' or by 'del=1'
     $opts->{del} = $opts->{'delete'} if defined $opts->{'delete'} and not $opts->{del};
+
+    # Forbid use of earlyexpunge except on dev instances
+    die "Can't use --earlyexpunge on production servers.\n"
+        if $opts->{earlyexpunge} && !$LJ::IS_DEV_SERVER;
 
     return $opts;
 }
@@ -261,7 +274,6 @@ sub singleMove {
     abortWithUsage() unless defined $user && defined $dclust;
 
     require "$ENV{'LJHOME'}/cgi-bin/ljlib.pl";
-    eval "use LJ::Cmdbuffer; 1;" or die $@;
 
     $user = LJ::canonical_username($user);
     abortWithUsage("Invalid username") unless length($user);
@@ -505,7 +517,7 @@ sub moveUser {
     }
 
     if ($opts->{expungedel} && $u->{'statusvis'} eq "D" &&
-        LJ::mysqldate_to_time($u->{'statusvisdate'}) < time() - 86400*31 &&
+        ( LJ::mysqldate_to_time($u->{'statusvisdate'}) < time() - 86400*31 || $opts->{earlyexpunge} ) &&
         !$u->is_identity) {
 
         print "Expunging user '$u->{'user'}'\n";
@@ -526,9 +538,7 @@ sub moveUser {
         if ($opts->{del}) {
             print "Deleting expungeable user data...\n" if $optv;
 
-            $dbh->do("DELETE FROM domains WHERE userid = ?", undef, $u->id);
-            $dbh->do("DELETE FROM email_aliases WHERE alias = ?",
-                     undef, $u->site_email_alias );
+            $u->delete_email_alias;
             $dbh->do("DELETE FROM userinterests WHERE userid = ?", undef, $u->id);
             $dbh->do("DELETE FROM comminterests WHERE userid = ?", undef, $u->id);
             $dbh->do("DELETE FROM syndicated WHERE userid = ?", undef, $u->id);
@@ -649,13 +659,6 @@ sub moveUser {
 
     print "Moving away from cluster $sclust\n" if $optv;
 
-    my %cmd_done;  # cmd_name -> 1
-    while (my $cmd = $dboa->selectrow_array("SELECT cmd FROM cmdbuffer WHERE journalid=$userid")) {
-        die "Already flushed cmdbuffer job '$cmd' -- it didn't take?\n" if $cmd_done{$cmd}++;
-        print "Flushing cmdbuffer for cmd: $cmd\n" if $optv > 1;
-        LJ::Cmdbuffer::flush($dbh, $dboa, $cmd, $userid);
-    }
-
     # setup dependencies (we can skip work by not checking a table if we know
     # its dependent table was empty).  then we have to order things so deps get
     # processed first.
@@ -686,7 +689,6 @@ sub moveUser {
                       "cmdbuffer" => 1,       # pre-flushed
                       "events" => 1,          # handled by qbufferd (not yet used)
                       "tempanonips" => 1,     # temporary ip storage for spam reports
-                      "recentactions" => 1,   # pre-flushed by clean_caches
                       "pendcomments" => 1,    # don't need to copy these
                       "active_user"  => 1,    # don't need to copy these
                       "random_user_set" => 1, # "
@@ -1032,7 +1034,7 @@ sub fetchTableInfo
     my $memkey = "moveucluster:" . Digest::MD5::md5_hex(join(",",@tables));
     my $tinfo = LJ::MemCache::get($memkey) || {};
     foreach my $table (@tables) {
-        next if grep { $_ eq $table } qw(events cmdbuffer recentactions pendcomments active_user random_user_set dbnotes);
+        next if grep { $_ eq $table } qw(events cmdbuffer pendcomments active_user random_user_set dbnotes);
         next if $tinfo->{$table};  # no need to load this one
 
         # find the index we'll use
@@ -1043,19 +1045,18 @@ sub fetchTableInfo
         $sth->execute;
         my @pris;
 
+        my %userid_primary_columns = map { $_ => 1 } qw( journalid userid commid rcptid );
         while (my $r = $sth->fetchrow_hashref) {
             push @pris, $r->{'Column_name'} if $r->{'Key_name'} eq "PRIMARY";
             next unless $r->{'Seq_in_index'} == 1;
             next if $idx;
-            if ($r->{'Column_name'} eq "journalid" ||
-                $r->{'Column_name'} eq "userid" ||
-                $r->{'Column_name'} eq "commid") {
+            if ( $userid_primary_columns{$r->{'Column_name'}} ) {
                 $idx = $r->{'Key_name'};
                 $idxcol = $r->{'Column_name'};
             }
         }
 
-        shift @pris if @pris && ($pris[0] eq "journalid" || $pris[0] eq "userid");
+        shift @pris if @pris && $userid_primary_columns{$pris[0]};
         my $verifykey = join(",", @pris);
 
         die "can't find index for table $table\n" unless $idx;

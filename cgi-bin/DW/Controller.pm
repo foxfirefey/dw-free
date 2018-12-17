@@ -54,13 +54,27 @@ sub success_ml {
     );
 }
 
+# return a success page, takes the following arguments:
+#   - a scope page in the form of `page-name.tt', in the form that DW::Controller->render_template expects
+#       this scope's corresponding .tt.text should have a ".success.message" and ".success.title"
+#   - a hashref of arguments to ".success.message", if needed
+#   - a list of links, with each link being in the form of { text_ml => ".success.link.x", url => LJ::create_url( "..." ) }
+sub render_success {
+    return DW::Template->render_template(
+        'success-page.tt', {
+            scope => "/" . $_[1],
+            message_arguments => $_[2],
+            links => $_[3],
+    });
+}
+
 # helper controller.  give it a few arguments and it does nice things for you.
 #
 # Supported arguments: (1 stands for any true value, 0 for any false value)
 # - anonymous => 1 -- lets anonymous (not logged in) visitors view the page
 # - anonymous => 0 -- doesn't (default)
-# - authas => 1 -- allows ?authas= in URL, generates authas form (not permitted
-#                  if anonymous => 1 specified)
+# - authas => 1  or { args } -- allows ?authas= in URL, generates authas form
+#                              (not permitted if anonymous => 1 specified)
 # - authas => 0 -- doesn't (default)
 # - specify_user => 1 -- allows ?user= in URL (Note: requesting both authas and
 #                        specify_user is allowed, but probably not a good idea)
@@ -68,9 +82,9 @@ sub success_ml {
 # - privcheck => $privs -- user must be logged in and have at least one priv of
 #                          the ones in this arrayref.
 #                          Example: [ "faqedit:guides", "faqcat", "admin:*" ]
-# - skip_domsess => 1 -- (for user domains) don't redirect if there is no domain
-#                      login cookie
-# - skip_domsess => 0 -- (for user domains) do redirect for the user domain 
+# - skip_domsess => 1 -- (for user domains) don't redirect if there is no
+#                         domain login cookie
+# - skip_domsess => 0 -- (for user domains) do redirect for the user domain
 #                        cookie (default)
 # - form_auth => 0 -- Do not automatically check form auth ( current default )
 # - form_auth => 1 -- Automatically check form auth ( planned to be future default )
@@ -107,7 +121,7 @@ sub controller {
     # 'anonymous' pages must declare themselves, else we assume that a remote is
     # necessary as most pages require a user
     $vars->{u} = $vars->{remote} = LJ::get_remote();
-    
+
     my $r = DW::Request->get;
     $vars->{r} = $r;
 
@@ -115,6 +129,7 @@ sub controller {
     unless ( $r->did_post || $args{skip_domsess} ) {
         my $burl = LJ::remote_bounce_url();
         if ( $burl ) {
+            $r->err_header_out( "Cache-Control" => "no-cache" );
             return $fail->( $r->redirect( $burl ) );
         }
     }
@@ -136,7 +151,16 @@ sub controller {
     if ( $args{authas} ) {
         $vars->{u} = LJ::get_authas_user( $r->get_args->{authas} || $vars->{remote}->user )
             or return $fail->( error_ml( 'error.invalidauth' ) );
+
+        my $authas_args = $args{authas} == 1 ? {} : $args{authas};
+
+        # older pages
         $vars->{authas_html} = LJ::make_authas_select( $vars->{remote}, { authas => $vars->{u}->user } );
+
+        # foundation pages
+        $vars->{authas_form} = "<form action='" . LJ::create_url() . "' method='get'>"
+                                . LJ::make_authas_select( $vars->{remote}, { authas => $vars->{u}->user, foundation => 1, %{$authas_args || {}} } )
+                                . "</form>";
     }
 
     # check user is suitably privved

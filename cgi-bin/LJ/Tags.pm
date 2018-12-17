@@ -480,7 +480,7 @@ sub can_add_tags {
     # we don't allow identity users to add tags, even when tag permissions would otherwise allow any user on the site
     # exception are communities that explicitly allow identity users to post in them
     # FIXME: perhaps we should restrict on all users, but allow for more restrictive settings such as members?
-    return undef unless $remote->is_personal || $remote->is_identity && $u->prop( 'identity_posting' );
+    return undef unless $remote->is_individual;
     return undef if $u->has_banned( $remote );
 
     # get permission hashref and check it; note that we fall back to the control
@@ -500,7 +500,7 @@ sub can_add_entry_tags {
     return undef unless $remote && $entry;
 
     my $journal = $entry->journal;
-    return undef unless $remote->is_personal || $remote->is_identity && $journal->prop( 'identity_posting' );
+    return undef unless $remote->is_individual;
     return undef if $journal->has_banned( $remote );
 
     my $perms = LJ::Tags::get_permission_levels( $journal );
@@ -536,7 +536,7 @@ sub can_control_tags {
     my $u = LJ::want_user(shift);
     my $remote = LJ::want_user(shift);
     return undef unless $u && $remote;
-    return undef unless $remote->is_personal || $remote->is_identity && $u->prop( 'identity_posting' );
+    return undef unless $remote->is_individual;
     return undef if $u->has_banned( $remote );
 
     # get permission hashref and check it
@@ -750,8 +750,6 @@ sub update_logtags {
     my $utags = LJ::Tags::get_usertags($u);
     return undef unless $utags;
 
-    # for errors that we want to skip over silently instead of failing, but still report at the end
-    my @skippable_errors;
     my @unauthorized_add;
 
     # take arrayrefs of tag strings and stringify them for validation
@@ -774,20 +772,26 @@ sub update_logtags {
         $opts->{"${verb}_ids"} ||= [];
         foreach my $kw (@{$opts->{$verb} || []}) {
             my $kwid = $u->get_keyword_id( $kw, $can_control );
-            if ($can_control) {
-                # error if we failed to create
-                return undef unless $kwid;
-            } else {
-                # if we're not creating, who cares, just skip; also skip if the keyword
-                # is not really a tag (don't promote it)
-                unless ( $kwid && $utags->{$kwid} ) {
+
+            # error if we should have been able to create a kwid and didn't
+            return undef if $can_control && ! $kwid;
+
+            # skip if the tag isn't used in the journal and either
+            # (a) we can't add it or (b) we are using force:
+            # we only use force if we are clearing all tags or importing, so
+            # we will have already added all the canonical tags in the journal,
+            # and any additional tags would be bogus
+            unless ( $kwid && $utags->{$kwid} ) {
+                if ( ! $can_control || $opts->{force} ) {
                     push @unauthorized_add, $kw;
                     next;
+                } else {
+                    # we need to create this tag later
+                    push @to_create, $kw;
                 }
             }
 
-            # add the ids to the list, and save to create later if needed
-            push @to_create, $kw unless $utags->{$kwid};
+            # add the id to the list
             push @{$opts->{"${verb}_ids"}}, $kwid;
         }
     }
@@ -820,13 +824,12 @@ sub update_logtags {
     # now don't readd things we already have
     delete $add{$_} foreach keys %{$tags};
 
-    # populate the errref, but don't actually return.
-    push @skippable_errors, LJ::Lang::ml( "taglib.error.add", { tags => join( ", ", @unauthorized_add ) } ) if @unauthorized_add;
-    push @skippable_errors, LJ::Lang::ml( "taglib.error.delete", { tags => join( ", ", map { $utags->{$_}->{name} } keys %delete ) } ) if %delete && ! $can_control ;
-    $err->( join " ", @skippable_errors ) if @skippable_errors;
-
-    # but delete nothing if we're not a controller
-    %delete = () unless $can_control || $opts->{force};
+    my @add_delete_errors;
+    push @add_delete_errors, LJ::Lang::ml( "taglib.error.add", { tags => join( ", ", @unauthorized_add ) } )
+        if @unauthorized_add && ! $opts->{force};
+    push @add_delete_errors, LJ::Lang::ml( "taglib.error.delete2", { tags => join( ", ", map { $utags->{$_}->{name} } keys %{$tags} ) } )
+        if %delete && ! $can_control && ! $opts->{force};
+    return $err->( join "\n\n", @add_delete_errors ) if @add_delete_errors;
 
     # bail out if nothing needs to be done
     return 1 unless %add || %delete;
@@ -1030,7 +1033,7 @@ sub delete_logtags {
     my $jitemid = shift() + 0;
     return undef unless $u && $jitemid;
 
-    # maybe this is ghetto, but it does all of the logic we would otherwise
+    # maybe this is wrong, but it does all of the logic we would otherwise
     # have to duplicate here, so no sense in doing that.
     return LJ::Tags::update_logtags($u, $jitemid, { set_string => "", force => 1, });
 }
@@ -1259,6 +1262,10 @@ sub rename_usertag {
     my $newname = LJ::Tags::validate_tag($newkw);
     return $err->( LJ::Lang::ml( 'taglib.error.invalid', { tagname => LJ::ehtml( $newkw ) } ) )
         unless $newname;
+    return $err->( LJ::Lang::ml( 'taglib.error.notcanonical',
+                                 { beforetag => LJ::ehtml( $newkw ),
+                                   aftertag => LJ::ehtml( $newname ) } ) )
+        unless $newkw eq $newname; # Far from ideal UX-wise.
 
     # get a list of keyword ids to operate on
     my $kwid;
@@ -1363,7 +1370,7 @@ sub merge_usertags {
     my $exists = $tags->{$u->get_keyword_id( $newname )} ? 1 : 0;
     my %merge_from = map { $_ => 1 } @merge_from;
     return $err->( LJ::Lang::ml( 'taglib.error.mergetoexisting', { tagname => LJ::ehtml( $merge_to ) } ) )
-        if $exists && ! $merge_from{$merge_to};
+        if $exists && ! $merge_from{lc( $merge_to )};
 
     # if necessary, create new tag id
     my $merge_to_id;

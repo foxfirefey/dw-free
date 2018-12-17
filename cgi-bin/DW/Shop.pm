@@ -22,10 +22,9 @@ use Carp qw/ croak confess /;
 
 use DW::Shop::Cart;
 use DW::Shop::Engine;
-use DW::Shop::Item::Account;
-use DW::Shop::Item::Points;
-use DW::Shop::Item::Rename;
-use DW::Shop::Item::Icons;
+
+use LJ::ModuleLoader;
+LJ::ModuleLoader->require_subclasses( "DW::Shop::Item" );
 
 # constants across the site
 our $MIN_ORDER_COST = 3.00; # cost in USD minimum.  this only comes into affect if
@@ -42,6 +41,12 @@ our $STATE_PEND_REFUND = 6;    # refund is approved but unissued
 our $STATE_REFUNDED    = 7;    # we have refunded this cart and reversed it
 our $STATE_CLOSED      = 8;    # carts can go from OPEN -> CLOSED
 our $STATE_DECLINED    = 9;    # payment entity declined the fundage
+
+# state names, just for helping
+our %STATE_NAMES = (
+    1 => 'open', 2 => 'checkout', 3 => 'pend_paid', 4 => 'paid', 5 => 'processed',
+    6 => 'pend_refund', 7 => 'refunded', 8 => 'closed', 9 => 'declined'
+);
 
 # documentation of valid state transitions...
 #
@@ -168,10 +173,6 @@ sub remote_sysban_check {
         }
     }
 
-    # now do a tor check
-    return BML::ml( 'error.blocked', { blocktype => "Tor proxy", email => $LJ::ACCOUNTS_EMAIL } )
-        if LJ::Sysban::tor_check( 'shop' );
-
     # looks good
     return undef;
 }
@@ -186,8 +187,9 @@ use Carp qw/ confess /;
 
 # returns the shop on a user
 sub shop {
-    return $_[0]->{_shop}
+    my $shop = $_[0]->{_shop}
         or confess 'tried to get shop without calling DW::Shop->initialize()';
+    return $shop;
 }
 
 1;

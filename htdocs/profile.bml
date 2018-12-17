@@ -94,7 +94,7 @@ body<=
         my $url = $u->profile_url( full => $is_full );
 
         my $good_domain = $url;
-        $good_domain =~ s!^http://!!;
+        $good_domain =~ s!^https?://!!;
         $good_domain =~ s!/.*!!;
         if ( $domain ne $good_domain ) {
             return BML::redirect( $url );
@@ -396,7 +396,13 @@ body<=
                           style => 'vertical-align: middle; border: 0;' } );
         $ret .= "</a>\n";
     }
+
+    if ( $u->is_rp_account ) {
+        $ret .= ": " . BML::ml( '.details.rp' );
+    }
+
     $ret .= q{ </div> };
+
 
 ################################################################################
 ##### ACTION LINKS
@@ -537,43 +543,6 @@ body<=
     }
 
 ################################################################################
-##### PUBSUBHUBBUB INFORMATION FOR SYNDICATED ACCOUNTS
-
-    my $fredbody = '';
-
-    if ( $is_full && ( my @rows = $profile->hubbub_info_rows ) ) {
-        foreach my $row (@rows) {
-            my @data = (
-                id => $row->{id},
-                pings => $row->{timespinged},
-                huburl => LJ::ehtml( $row->{huburl} ),
-                topicurl => LJ::ehtml( $row->{topicurl} ),
-                lastseen => LJ::ago_text( $row->{lastseen} ),
-                goodfor => LJ::mysql_time( $row->{leasegoodto} ),
-            );
-
-            my @row_texts;
-            while ( @data && ( my ( $ml, $txt ) = splice( @data, 0, 2 ) ) ) {
-                push @row_texts, LJ::Lang::ml( '.label.syn.hubbub.' . $ml ) . '</th><td>' . $txt;
-            }
-
-            $fredbody .= q{ <div class="profile"><table summary=''><tr><th> };
-            $fredbody .= join( '</td></tr><tr><th>', @row_texts );
-            $fredbody .= q{ </td></tr></table></div> };
-        }
-    }
-
-    if ( $fredbody ) {
-        $ret .= $content_block->(
-            section_name    => 'hubbub',
-            section_name_ml => '.hubbub.header',
-            section_link    => 'hubbub',
-            body            => $fredbody,
-        );
-    }
-
-
-################################################################################
 ##### BIO
 
     my $biobody = '';
@@ -638,16 +607,10 @@ body<=
     my $imlist;
     foreach my $service ( $profile->external_services ) {
         my $title = $ML{$service->{title_ml}};
-        $imlist .= "<tr class='im_$service->{type}'>";
-        $imlist .= "<td class='im_icon'><img src='$LJ::IMGPREFIX/profile_icons/$service->{image}' alt=\"$title\" title=\"$title\" /></td>";
-        if ( $service->{status_image} ) {
-            my $status_title = $ML{$service->{status_title_ml}};
-            $imlist .= "<td>" . $linkify->( $service ) . "</td>";
-            $imlist .= "<td class='im_status'><img src='$service->{status_image}' alt=\"$status_title\" title=\"$status_title\" width='$service->{status_width}' height='$service->{status_height}' /></td>";
-        } else {
-            $imlist .= "<td colspan='2'>" . $linkify->( $service ) . "</td>";
-        }
-        $imlist .= "</tr>";
+        $imlist .= "<li class=\"im_$service->{type}\">";
+        $imlist .= "<div class=\"im_icon\"><img src=\"$LJ::IMGPREFIX/profile_icons/$service->{image}\" alt=\"$title\" title=\"$title\" /></div>";
+        $imlist .= " " . $linkify->( $service );
+        $imlist .= "</li>";
     }
     if ( $imlist ) {
         my $secimg = $profile->security_image( $u->opt_showcontact );
@@ -662,7 +625,7 @@ body<=
             section_name_postfix => $secimg,
             section_link    => 'services',
             extra_attrs     => $new_im_margin,
-            body            => "<table summary=''>$imlist</table>",
+            body            => "<ul>$imlist</ul>",
             links           => $links,
             collapsible     => 0,
         );
@@ -778,6 +741,18 @@ body<=
         @members_userids, @member_of_userids, @admin_of_userids,
         @posting_access_to_userids, @posting_access_from_userids,
     );
+
+    # pull in list of banned users
+    my $banned = LJ::load_rel_user($u, 'B') || [];
+    my %banned_users = map { $_ => 1 } @$banned;
+
+    # remove banned users from lists to display
+    @$_ = grep { !exists $banned_users{ $_ } } @$_
+        foreach ( \@trusted_userids, \@watched_userids, \@trusted_by_userids, \@watched_by_userids,
+                  \@mutually_trusted_userids, \@mutually_watched_userids, \@mutually_watched_userids,
+                  \@not_mutually_trusted_userids, \@not_mutually_watched_userids,
+                  \@not_mutually_trusted_by_userids, \@not_mutually_watched_by_userids, \@members_userids,
+                  \@member_of_userids, \@admin_of_userids, \@posting_access_to_userids, \@posting_access_from_userids );
 
     # presort various userid arrays
     @$_ = sort { $us->{$a}->display_name cmp $us->{$b}->display_name } @$_
@@ -973,7 +948,7 @@ body<=
 
         if ( $u->is_personal ) {
             my @member_of_list = grep { $includeuser->( $_ ) }
-                map { $us->{$_} } @member_of_userids; 
+                map { $us->{$_} } @member_of_userids;
             $member_of_body = $content_inner_block->(
                 section_name    => 'member_of_comms',
                 section_name_ml => $mlsn->( '.comms.member_of', \@member_of_list ),

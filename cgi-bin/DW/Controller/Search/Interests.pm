@@ -30,7 +30,7 @@ sub interest_handler {
     my $r = DW::Request->get;
     my $did_post = $r->did_post;
     my $args = $did_post ? $r->post_args : $r->get_args;
-    return error_ml( 'bml.badinput.body' ) unless LJ::text_in( $args );
+    return error_ml( 'bml.badinput.body1' ) unless LJ::text_in( $args );
     return error_ml( 'error.invalidform' )
         if $did_post && ! LJ::check_form_auth( $args->{lj_form_auth} );
 
@@ -369,6 +369,7 @@ sub interest_handler {
         # (already set to intcount, unless we have multiple ints)
         if ( $opt_map{$type} ) {
             $rv->{allcount} ||= scalar LJ::users_with_all_ints( \@intids );
+            $rv->{allcount} //= 0;  # scalar(undef) isn't zero
         } else {
             # we just did the full search; count the existing list
             $rv->{allcount} ||= scalar @uids;

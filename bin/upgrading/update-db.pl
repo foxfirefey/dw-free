@@ -16,10 +16,8 @@
 #
 
 use strict;
-use lib "$ENV{LJHOME}/extlib/lib/perl5";
-use lib "$ENV{LJHOME}/cgi-bin";
 
-BEGIN { require "ljlib.pl"; }
+BEGIN { $LJ::_T_CONFIG = $ENV{DW_TEST}; require "$ENV{LJHOME}/cgi-bin/ljlib.pl"; }
 use Getopt::Long;
 use File::Path ();
 use File::Basename qw/ dirname /;
@@ -27,7 +25,6 @@ use File::Copy ();
 use Cwd qw/ abs_path /;
 use Image::Size ();
 use LJ::S2;
-use MogileFS::Admin;
 
 my $opt_sql = 0;
 my $opt_drop = 0;
@@ -41,6 +38,8 @@ my $opt_nostyles;
 my $opt_forcebuild = 0;
 my $opt_compiletodisk = 0;
 my $opt_innodb;
+my $opt_poptest = 0;
+
 exit 1 unless
 GetOptions("runsql" => \$opt_sql,
            "drop" => \$opt_drop,
@@ -57,6 +56,7 @@ GetOptions("runsql" => \$opt_sql,
            );
 
 $opt_nostyles = 1 unless LJ::is_enabled("update_styles");
+$opt_nostyles = 1 if $ENV{DW_TEST};
 $opt_innodb = 1;
 
 if ($opt_help) {
@@ -219,18 +219,8 @@ print "# Done.\n";
 ############################################################################
 
 sub populate_database {
-    # check for old style external_foaf_url (indexed:1, cldversion:0)
-    my $prop = LJ::get_prop('user', 'external_foaf_url');
-    if ($prop->{indexed} == 1 && $prop->{cldversion} == 0) {
-        print "Updating external_foaf_url userprop.\n";
-        system("$ENV{'LJHOME'}/bin/upgrading/migrate-userprop.pl", 'external_foaf_url');
-    }
-
     populate_basedata();
     populate_proplists();
-    clean_schema_docs();
-    populate_mogile_conf();
-    schema_upgrade_scripts();
 
     # system user
     my $made_system;
@@ -394,9 +384,9 @@ sub populate_s2 {
             my $d_file = $file;
             my $d_LD = $LD;
 
-            $d_file =~ s!^\Q$LJ::HOME\E/*!!; 
+            $d_file =~ s!^\Q$LJ::HOME\E/*!!;
             $d_LD =~ s!^\Q$LJ::HOME\E/*!!;
- 
+
             print "SOURCE: $d_file ( $d_LD )\n";
 
             while (<SL>)
@@ -406,7 +396,7 @@ sub populate_s2 {
                 my ($base, $type, $parent) = split;
 
                 if ($type eq "INCLUDE") {
-                    push @layerfiles, dirname($file) . "/$base";
+                    unshift @layerfiles, dirname($file) . "/$base";
                     next;
                 }
 
@@ -461,7 +451,7 @@ sub populate_s2 {
                 next if $known_id{$id};
                 push @del_ids, $id;
             }
-    
+
             # if we need to delete things, prompt before blowing away system layers
             if (@del_ids) {
                 print "\nWARNING: The following S2 layer ids are known as system layers but are no longer\n" .
@@ -476,11 +466,11 @@ sub populate_s2 {
                     print "\nOkay, I am NOT deleting the layers.\n";
                 }
             }
-    
+
             if ( $has_new_layer ) {
                 $LJ::CACHED_PUBLIC_LAYERS = undef;
                 LJ::MemCache::delete( "s2publayers" );
-    
+
                 print "\nCleared styles cache.\n";
             }
         }
@@ -531,7 +521,6 @@ sub populate_proplist_file {
         'media_prop_list' => 'name',
         'talkproplist' => 'name',
         'usermsgproplist' => 'name',
-        'pollproplist2'   => 'name',
         );
     my %id = (
         'userproplist' => 'upropid',
@@ -539,7 +528,6 @@ sub populate_proplist_file {
         'media_prop_list' => 'propid',
         'talkproplist' => 'tpropid',
         'usermsgproplist' => 'propid',
-        'pollproplist2'   => 'propid',
     );
 
     my $table;  # table
@@ -642,15 +630,15 @@ sub populate_moods {
             my $sth = $dbh->prepare("SELECT moodid, mood, parentmood, weight FROM moods");
             $sth->execute;
             while (@_ = $sth->fetchrow_array) { $mood{$_[0]} = [ $_[1], $_[2], $_[3] ]; }
-            
+
             my %moodtheme;  # name -> [ id, des ]
             $sth = $dbh->prepare("SELECT moodthemeid, name, des FROM moodthemes WHERE is_public='Y'");
             $sth->execute;
             while (@_ = $sth->fetchrow_array) { $moodtheme{$_[1]} = [ $_[0], $_[2] ]; }
-            
+
             my $themeid;  # current themeid (from existing db or just made)
             my %data;     # moodid -> "$url$width$height" (for equality test)
-            
+
             while (<M>) {
                 chomp;
                 if (/^MOOD\s+(\d+)\s+(.+)\s+(\d+)\s+(\d+)\s*$/) {
@@ -664,7 +652,7 @@ sub populate_moods {
                             undef, $weight, $id );
                     }
                 }
-            
+
                 if (/^MOODTHEME\s+(.+?)\s*:\s*(.+)$/) {
                     my ($name, $des) = ($1, $2);
                     %data = ();
@@ -688,7 +676,7 @@ sub populate_moods {
                     }
                     next;
                 }
-            
+
                 if (/^(\d+)\s+(\S+)\s+(\d+)\s+(\d+)\s*$/) {
                     next unless $themeid;
                     my ($moodid, $url, $w, $h) = ($1, $2, $3, $4);
@@ -702,64 +690,6 @@ sub populate_moods {
             LJ::MemCache::delete( "moods_public" );
         }
     }
-}
-
-sub clean_schema_docs {
-    # clean out schema documentation for old/unknown tables
-    foreach my $tbl (qw(schemacols schematables)) {
-        my $sth = $dbh->prepare("SELECT DISTINCT tablename FROM $tbl");
-        $sth->execute;
-        while (my $doctbl = $sth->fetchrow_array) {
-            next if $table_create{$doctbl};
-            $dbh->do("DELETE FROM $tbl WHERE tablename=?", undef, $doctbl);
-        }
-    }
-}
-
-sub populate_mogile_conf {
-    # create/update the MogileFS database if we use it
-    return unless defined $LJ::MOGILEFS_CONFIG{hosts};
-
-    # create an admin MogileFS object
-    my $mgd = MogileFS::Admin->new(hosts => $LJ::MOGILEFS_CONFIG{hosts})
-        or die "Error: Unable to initalize MogileFS connection.\n";
-    my $exists = $mgd->get_domains();
-    print "Verifying MogileFS configuration...\n";
-
-    # verify domain exists?
-    my $domain = $LJ::MOGILEFS_CONFIG{domain};
-    unless (defined $exists->{$domain}) {
-        print "\tCreating domain $domain...\n";
-        $mgd->create_domain($domain)
-            or die "Error: Unable to create domain.\n";
-        $exists->{$domain} = {};
-    }
-
-    # now start verifying classes
-    foreach my $class (keys %{$LJ::MOGILEFS_CONFIG{classes} || {}}) {
-        if ($exists->{$domain}->{$class}) {
-            # version 2.35 of mogilefs changed this to a hashref
-            my $mindevcount = ref $exists->{$domain}->{$class} eq 'HASH'
-                ? $exists->{$domain}->{$class}->{mindevcount}
-                : $exists->{$domain}->{$class};
-            if ( $mindevcount != $LJ::MOGILEFS_CONFIG{classes}->{$class} ) {
-                # update the mindevcount since it's changed
-                print "\tUpdating class $class...\n";
-                $mgd->update_class( $domain, $class, { mindevcount => $LJ::MOGILEFS_CONFIG{classes}->{$class} } )
-                    or die "Error: Unable to update class.\n";
-            }
-        } else {
-            # create it
-            print "\tCreating class $class...\n";
-            $mgd->create_class( $domain, $class, { mindevcount => $LJ::MOGILEFS_CONFIG{classes}->{$class} } )
-                or die "Error: Unable to create class.\n";
-        }
-    }
-}
-
-sub schema_upgrade_scripts {
-    # none right now, when DW has some upgrades you can look back at this file's history
-    # to see what kind of stuff goes in here
 }
 
 sub skip_opt

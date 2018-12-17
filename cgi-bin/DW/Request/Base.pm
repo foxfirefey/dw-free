@@ -164,13 +164,19 @@ sub post_args {
 
 # returns a Hash::MultiValue of query string arguments
 sub get_args {
-    my DW::Request $self = $_[0];
+    my DW::Request $self = shift;
     return $self->{get_args} if defined $self->{get_args};
 
+    my %opts = @_;
+
     # We lowercase GET arguments because these are often typed by users, and
-    # that's nicer on them.
+    # that's nicer on them.  This isn't always desired behavior, though.
+    # In particular, it confuses post_fields_by_widget in LJ::Widget.
+
+    my $lc = $opts{preserve_case} ? 0 : 1;
+
     return $self->{get_args} =
-        $self->_string_to_multivalue( $self->query_string, lowercase => 1 );
+        $self->_string_to_multivalue( $self->query_string, lowercase => $lc );
 }
 
 # Returns a JSON object contained in the body of this request if and only if
@@ -215,9 +221,10 @@ sub _string_to_multivalue {
 
 # simply sets the location header and returns REDIRECT
 sub redirect {
+    my %opts = @_;
     my DW::Request $self = $_[0];
     $self->header_out( Location => $_[1] );
-    return $self->REDIRECT;
+    return $opts{permanent} ? $self->MOVED_PERMANENTLY : $self->REDIRECT;
 }
 
 # indicates that this request has been handled
@@ -226,8 +233,10 @@ sub OK { return 0; }
 # HTTP status codes that we return in other methods
 sub HTTP_OK { return 200; }
 sub HTTP_CREATED { return 201; }
+sub MOVED_PERMANENTLY { return 301; }
 sub REDIRECT  { return 302; }
 sub NOT_FOUND { return 404; }
+sub HTTP_GONE { return 410; }
 sub SERVER_ERROR { return 500; }
 sub HTTP_UNAUTHORIZED { return 401; }
 sub HTTP_BAD_REQUEST { return 400; }

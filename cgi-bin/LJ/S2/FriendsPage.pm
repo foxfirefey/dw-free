@@ -35,12 +35,11 @@ sub FriendsPage
 
     LJ::need_res( LJ::S2::tracking_popup_js() );
 
-    # load for ajax cuttag
-    LJ::need_res( 'js/cuttag-ajax.js' );
-    LJ::need_res( { group => "jquery" }, qw(
-            js/jquery/jquery.ui.widget.js
-            js/jquery.cuttag-ajax.js
-        ) );
+    # include JS for quick reply, icon browser, and ajax cut tag
+    my $handle_with_siteviews = 0;  # not an option for FriendsPage?
+    LJ::Talk::init_s2journal_js( iconbrowser => $remote && $remote->can_use_userpic_select,
+                                 siteskin => $handle_with_siteviews, lastn => 1 );
+
     my $collapsed = BML::ml( 'widget.cuttag.collapsed' );
     my $expanded = BML::ml( 'widget.cuttag.expanded' );
     my $collapseAll = BML::ml( 'widget.cuttag.collapseAll' );
@@ -53,6 +52,9 @@ sub FriendsPage
   expandAll = '$expandAll';
   </script>
     ];
+
+    # init shortcut js if selected
+    LJ::Talk::init_s2journal_shortcut_js( $remote, $p );
 
     my $sth;
     my $user = $u->{'user'};
@@ -135,8 +137,14 @@ sub FriendsPage
 
     my $filter;
     if ( $opts->{securityfilter} ) {
-            $p->{filter_active} = 1;
+        my $filter = $u->trust_groups( id => $opts->{securityfilter} );
+        $p->{filter_active} = 1;
+        if ( defined $filter ) {
+            $p->{filter_name} = $filter->{groupname};
+        } else {
+            # something went wrong; just use the group number
             $p->{filter_name} = $opts->{securityfilter};
+        }
     } else {
     # but we can't just use a filter, we have to make sure the person is allowed to
         if ( ( ! defined $get->{filter} || $get->{filter} ne "0" )
@@ -271,7 +279,7 @@ sub FriendsPage
     # these are the same for both previous and next links
     my %linkvars;
     $linkvars{show} = $get->{show} if defined $get->{show} && $get->{show} =~ /^\w+$/;
-    $linkvars{date} = $get->{date} if $get->{date};
+    $linkvars{date} = $get->{date} if $get->{date} && $u->can_use_daily_readpage;
     $linkvars{filter} = $get->{filter} + 0 if defined $get->{filter};
 
     # if we've skipped down, then we can skip back up
@@ -283,6 +291,15 @@ sub FriendsPage
         $nav->{'forward_skip'} = $newskip;
         $nav->{'forward_count'} = $itemshow;
         $p->{head_content} .= qq#<link rel="next" href="$nav->{forward_url}" />\n#;
+    } elsif ( $linkvars{date} ) {
+        # next day when viewing by date
+        my %nextvars = %linkvars;
+        my $nexttime = LJ::mysqldate_to_time( $linkvars{date} ) + 86400;
+        unless ( $nexttime > time ) {
+            $nextvars{date} = LJ::mysql_date( $nexttime );
+            $nav->{'forward_url'} = LJ::S2::make_link( $base, \%nextvars );
+            $p->{head_content} .= qq#<link rel="next" href="$nav->{forward_url}" />\n#;
+        }
     }
 
     ## unless we didn't even load as many as we were expecting on this
@@ -295,6 +312,14 @@ sub FriendsPage
         $nav->{'backward_url'} = LJ::S2::make_link( $base, \%linkvars );
         $nav->{'backward_skip'} = $newskip;
         $nav->{'backward_count'} = $itemshow;
+        $p->{head_content} .= qq#<link rel="prev" href="$nav->{backward_url}" />\n#;
+    } elsif ( $linkvars{date} ) {
+        # prev day when viewing by date
+        my %prevvars = %linkvars;
+        my $prevtime = LJ::mysqldate_to_time( $linkvars{date} ) - 86400;
+        $prevvars{date} = LJ::mysql_date( $prevtime );
+        delete $prevvars{skip};  # from forward case; not used here
+        $nav->{'backward_url'} = LJ::S2::make_link( $base, \%prevvars );
         $p->{head_content} .= qq#<link rel="prev" href="$nav->{backward_url}" />\n#;
     }
 

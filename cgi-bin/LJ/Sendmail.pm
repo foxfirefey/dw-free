@@ -16,8 +16,7 @@
 
 use strict;
 
-use lib "$LJ::HOME/cgi-bin";
-require "ljlib.pl";
+require "$ENV{LJHOME}/cgi-bin/ljlib.pl";
 
 package LJ;
 
@@ -29,7 +28,7 @@ use IO::Socket::INET;
 use MIME::Lite;
 use Mail::Address;
 use MIME::Words qw( encode_mimeword );
-use Text::Markdown;
+use LJ::CleanHTML;
 
 my $done_init = 0;
 sub init {
@@ -148,7 +147,8 @@ sub send_mail
                                    'Bcc'     => $opt->{bcc} || '',
                                    'Subject' => $subject,
                                    'Type'    => 'text/plain',
-                                   'Data'    => $body);
+                                   'Data'    => $body,
+                                   'Encoding' => 'quoted-printable');
 
             $msg->attr("content-type.charset" => $charset);
         }
@@ -161,10 +161,6 @@ sub send_mail
     }
 
     # at this point $msg is a MIME::Lite
-
-    # note that we sent an email
-    LJ::DB::note_recent_action( undef, $msg->attr('content-type') =~ /plain/i
-                                       ? 'email_send_text' : 'email_send_html' );
 
     my $enqueue = sub {
         my $starttime = [gettimeofday()];
@@ -187,10 +183,6 @@ sub send_mail
                                         run_after => $opt->{delay} ? time() + $opt->{delay} : undef,
                                         );
         my $h = $sclient->insert($job);
-
-        LJ::blocking_report( 'the_schwartz', 'send_mail',
-                             tv_interval($starttime));
-
         return $h ? 1 : 0;
     };
 
@@ -227,11 +219,6 @@ sub send_mail
                          $msg->get('to'),
                          $rv ? "succeeded" : "failed",
                          $msg->get('subject') );
-
-    unless ($async_caller) {
-        LJ::blocking_report( $LJ::SMTP_SERVER || $LJ::SENDMAIL, 'send_mail',
-                             tv_interval($starttime), $notes );
-    }
 
     return 1 if $rv;
     return 0 if $@ =~ /no data in this part/;  # encoding conversion error higher
@@ -310,10 +297,15 @@ sub format_mail {
     $text = "$greeting\n\n$text\n\n$footer";
 
     # use markdown to format from text to HTML
-    my $html = Text::Markdown::markdown( $text );
+    my $html = $text;
+    my $opts = {};
+    LJ::CleanHTML::clean_as_markdown( \$html, $opts );
+
+    # run this cleaner to convert any user tags that turn up post-markdown
+    LJ::CleanHTML::clean_event( \$html, $opts );
 
     # use plaintext as-is, but look for "[links like these](url)", and change them to "links like these (url)"
-    my $plaintext = $text;
+    my $plaintext = LJ::strip_html( $text );
     $plaintext =~ s/\[(.*?)\]\(/$1 (/g;
 
     return ( $html, $plaintext );

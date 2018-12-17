@@ -21,6 +21,7 @@ use Template::Plugins;
 use Template::Namespace::Constants;
 use DW::FragmentCache;
 use DW::Request;
+use LJ::Directories;
 
 =head1 NAME
 
@@ -44,15 +45,6 @@ my $site_constants = Template::Namespace::Constants->new({
 
     domain      => $LJ::DOMAIN,
     domainweb   => $LJ::DOMAIN_WEB,
-
-    root    => $LJ::SITEROOT,
-    imgroot => $LJ::IMGPREFIX,
-    jsroot  => $LJ::JSPREFIX,
-    statroot=> $LJ::STATPREFIX,
-    ssl => {
-        root => $LJ::SSLROOT,
-        imgroot => $LJ::SSLIMGPREFIX,
-    },
 
     help => \%LJ::HELPURL,
 
@@ -123,10 +115,10 @@ sub template_string {
     return $out;
 }
 
-=head2 C<< $class->cached_template_string( $key, $filename, $subref, $opts, $extra ) >>
+=head2 C<< $class->cached_template_string( $key, $filename, $opts_subref, $cache_opts, $extra ) >>
 
 Render a template to a string -- optionally fragment caching it.
-$subref returns the options for template_string.
+$opts_subref returns the options for template_string.
 
 fragment opts:
 
@@ -143,15 +135,15 @@ fragment opts:
 =cut
 
 sub cached_template_string {
-    my ($class, $key, $filename, $subref, $opts, $extra ) = @_;
+    my ($class, $key, $filename, $opts_subref, $cache_opts, $extra ) = @_;
 
-    $extra ||= {};
+
     return DW::FragmentCache->get( $key, {
-        lock_failed => $opts->{lock_failed},
-        expire => $opts->{expire},
-        grace_period => $opts->{grace_period},
+        lock_failed => $cache_opts->{lock_failed},
+        expire => $cache_opts->{expire},
+        grace_period => $cache_opts->{grace_period},
         render => sub {
-            return $class->template_string( $filename, $subref->( $_[0] ), $extra );
+            return $class->template_string( $filename, $opts_subref->( $_[0] ), $extra );
         }
     }, $extra);
 }
@@ -160,9 +152,9 @@ sub cached_template_string {
 
 Render a template inside the sitescheme or alone.
 
-See render_template, except note that the opts hash is returned by subref if it's needed.
+See render_template, except note that the opts hash is returned by opts_subref if it's needed.
 
-$extra can contain:
+$cache_opts can contain:
 
 =over
 
@@ -181,9 +173,11 @@ $extra can contain:
 =cut
 
 sub render_cached_template {
-    my ($class, $key, $filename, $subref, $opts, $extra) = @_;
+    my ($class, $key, $filename, $opts_subref, $cache_opts, $extra) = @_;
 
-    my $out = $class->cached_template_string( $key, $filename, $subref, $opts, $extra );
+    $extra ||= {};
+
+    my $out = $class->cached_template_string( $key, $filename, $opts_subref, $cache_opts, $extra );
 
     return $class->render_string( $out, $extra );
 }

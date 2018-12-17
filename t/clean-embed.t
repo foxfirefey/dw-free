@@ -19,8 +19,7 @@ use warnings;
 
 use Test::More tests => 175;
 
-use lib "$ENV{LJHOME}/cgi-bin";
-BEGIN { require 'ljlib.pl'; }
+BEGIN { $LJ::_T_CONFIG = 1; require "$ENV{LJHOME}/cgi-bin/ljlib.pl"; }
 
 use LJ::CleanHTML;
 use LJ::EmbedModule;
@@ -208,7 +207,7 @@ note( "Testing parse_embed (We parse the embed contents first from a post)" );
     # because we have additional checks in the callers
     my $invalid_embed = qq{[Invalid lj-embed id 1]};
 
-    my $iframe = qq{<iframe ([^>]+)></iframe>(<div><a href=""></a></div>)};
+    my $iframe = qq{<div class="lj_embedcontent-wrapper" style="[^"]+"><div class="lj_embedcontent-ratio" style="[^"]+"><iframe ([^>]+)></iframe></div></div>(<div><a href=""></a></div>)};
 
     foreach ( (
         # [ "title"
@@ -337,7 +336,7 @@ note( "Testing parse_embed (We parse the embed contents first from a post)" );
             qq{foo <site-embed id="1"/>baz},
             qq{foo <site-embed id="1"><iframe src="http://www.youtube.com/embed/ABC123abc_-"></iframe></site-embed>baz},
             # site-embed iframe
-            qr{foo <iframe ([^>]+)></iframe><div><a href="https://www.youtube.com/watch\?v=ABC123abc_-">(?:[^<]+)</a></div>\s*baz},
+            qr{foo <div class="lj_embedcontent-wrapper" style="[^"]+"><div class="lj_embedcontent-ratio" style="[^"]+"><iframe ([^>]+)></iframe></div></div><div><a href="https://www.youtube.com/watch\?v=ABC123abc_-">(?:[^<]+)</a></div>\s*baz},
             # ...which contains the nested iframe with a URL from a trusted source
             qq{<iframe src="http://www.youtube.com/embed/ABC123abc_-"></iframe>},
         ],
@@ -349,7 +348,7 @@ note( "Testing parse_embed (We parse the embed contents first from a post)" );
             qq{foo <site-embed id="1"/> baz},
             qq{foo <site-embed id="1"><iframe src="http://www.youtube.com/embed/ABC123abc_-"></iframe></site-embed> baz},
             # site-embed iframe
-            qr{foo <iframe ([^>]+)></iframe><div><a href="https://www.youtube.com/watch\?v=ABC123abc_-">(?:[^<]+)</a></div>\s*baz},
+            qr{foo <div class="lj_embedcontent-wrapper" style="[^"]+"><div class="lj_embedcontent-ratio" style="[^"]+"><iframe ([^>]+)></iframe></div></div><div><a href="https://www.youtube.com/watch\?v=ABC123abc_-">(?:[^<]+)</a></div>\s*baz},
             # ...which contains the nested iframe with a URL from a trusted source
             qq{<iframe src="http://www.youtube.com/embed/ABC123abc_-"></iframe>},
         ],
@@ -368,9 +367,9 @@ note( "Testing parse_embed (We parse the embed contents first from a post)" );
             qq{foo <site-embed><object>blah</site-embed> bzzt},
 
             qq{foo <site-embed id="1"/> bzzt},
-            qq{foo <site-embed id="1"><object>blah</site-embed> bzzt},
+            qq{foo <site-embed id="1"><object>blah</object></site-embed> bzzt},
             qr{foo $iframe bzzt},
-            qq{<object>blah}
+            qq{<object>blah</object>}
         ],
 
 
@@ -486,7 +485,7 @@ note( "Testing parse_embed (We parse the embed contents first from a post)" );
             is( $attrs{id}, "embed_${userid}_1", "iframe id: $title" );
             like( $attrs{name}, qr!embed_${userid}_1_[\w]{5}!, "iframe name: $title" );
             is( $attrs{class}, "lj_embedcontent", "iframe class: $title" );
-            like( $attrs{src}, qr!^http://$LJ::EMBED_MODULE_DOMAIN/\?journalid=!, "iframe src: $title" );
+            like( $attrs{src}, qr!^(https?:)?//$LJ::EMBED_MODULE_DOMAIN/\?journalid=!, "iframe src: $title" );
         }
 
         # check the iframe contents

@@ -19,7 +19,7 @@ use Carp qw(croak);
 
 sub cmd { "suspend" }
 
-sub desc { "Suspend an account or entry." }
+sub desc { "Suspend an account or entry. Requires priv: suspend." }
 
 sub args_desc { [
                  'username or email address or entry url' => "The username of the account to suspend, or an email address to suspend all accounts at that address, or an entry URL to suspend a single entry within an account",
@@ -115,6 +115,14 @@ sub execute {
 
         if ( $openid_only && ! $u->is_identity ) {
             $self->error( "$username is not an identity account." );
+            next;
+        }
+
+        if ( $u->get_suspend_note && $confirmed ne "confirm" ) {
+            $self->error( "One or more accounts have suspend notes:" );
+            $self->error( "   " . $u->get_suspend_note ) foreach @users;
+            $self->error( "To actually confirm this action, please do this again:" );
+            $self->error( "   suspend $user \"$reason\" confirm" );
             next;
         }
 

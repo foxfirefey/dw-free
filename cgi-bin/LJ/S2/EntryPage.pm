@@ -62,9 +62,8 @@ sub EntryPage
     if ($u->should_block_robots || $entry->should_block_robots) {
         $p->{'head_content'} .= LJ::robot_meta_tags();
     }
-    if ($LJ::UNICODE) {
-        $p->{'head_content'} .= '<meta http-equiv="Content-Type" content="text/html; charset='.$opts->{'saycharset'}."\" />\n";
-    }
+
+    $p->{'head_content'} .= '<meta http-equiv="Content-Type" content="text/html; charset='.$opts->{'saycharset'}."\" />\n";
 
     my $prev_url = S2::Builtin::LJ::Entry__get_link( $opts->{ctx}, $s2entry, "nav_prev" )->{url};
     $p->{head_content} .= qq{<link rel="prev" href="$prev_url" />\n} if $prev_url;
@@ -75,22 +74,11 @@ sub EntryPage
     # canonical link to the entry or comment thread
     $p->{head_content} .= LJ::canonical_link( $permalink, $get->{thread} );
 
-    # quickreply js libs
-    # if we're using the site skin, don't override the jquery-ui theme, as that's already included
-    my @iconbrowser_extra_stylesheet;
-    @iconbrowser_extra_stylesheet = ( 'stc/jquery/jquery.ui.theme.smoothness.css' )
-        unless $opts->{handle_with_siteviews_ref} && ${$opts->{handle_with_siteviews_ref}};
-
-    LJ::need_res( LJ::Talk::init_iconbrowser_js( 1, @iconbrowser_extra_stylesheet ) )
-        if $remote && $remote->can_use_userpic_select;
-
-    LJ::need_res( { group => "jquery" }, qw(
-            js/jquery/jquery.ui.core.js
-            stc/jquery/jquery.ui.core.css
-            js/jquery/jquery.ui.widget.js
-            js/jquery.quickreply.js
-            js/jquery.threadexpander.js
-        ) );
+    # include JS for quick reply, icon browser, and ajax cut tag
+    my $handle_with_siteviews = $opts->{handle_with_siteviews_ref} &&
+                              ${$opts->{handle_with_siteviews_ref}};
+    LJ::Talk::init_s2journal_js( iconbrowser => $remote && $remote->can_use_userpic_select,
+                                 siteskin => $handle_with_siteviews );
 
     $p->{'entry'} = $s2entry;
     LJ::Hooks::run_hook('notify_event_displayed', $entry);
@@ -146,8 +134,10 @@ sub EntryPage
             my $dtalkid = $com->{'talkid'} * 256 + $entry->anum;
             my $text = LJ::CleanHTML::quote_html( $com->{body}, $get->{nohtml} );
 
+            my $anon_comment = LJ::Talk::treat_as_anon( $pu, $u );
             LJ::CleanHTML::clean_comment( \$text, { preformatted => $com->{props}->{opt_preformatted},
-                                                    anon_comment => LJ::Talk::treat_as_anon( $pu, $u ),
+                                                    anon_comment => $anon_comment,
+                                                    nocss => $anon_comment,
                                                     editor => $com->{props}->{editor}
                                                   } );
 
@@ -419,6 +409,9 @@ sub EntryPage
         ) );
     LJ::need_res( LJ::S2::tracking_popup_js() );
 
+    # init shortcut js if selected
+    LJ::Talk::init_s2journal_shortcut_js( $remote, $p );
+
     $p->{'_picture_keyword'} = $get->{'prop_picture_keyword'};
 
     $p->{'viewing_thread'} = $get->{'thread'} ? 1 : 0;
@@ -437,7 +430,7 @@ sub EntryPage
     # creates the comment nav bar
     $p->{'comment_nav'} = CommentNav({
         'view_mode' => $flat_mode ? "flat" : $top_only_mode ? "top-only" : "threaded",
-        'url' => $entry->url( style_args => LJ::viewing_style_opts( %$get ) ),
+        'url' => $entry->url( style_opts => LJ::viewing_style_opts( %$get ) ),
         'current_page' => $copts->{'out_page'},
         'show_expand_all' => $show_expand_all,
     });
@@ -525,13 +518,9 @@ sub EntryPage_entry
             }
         }
 
-        my $host = $apache_r->headers_in->{Host};
-        my $args = scalar $apache_r->args;
-        my $querysep = $args ? "?" : "";
-        my $redir = "http://$host$uri$querysep$args";
         $opts->{internal_redir} = "/protected";
         $apache_r->notes->{journalid} = $entry->journalid;
-        $apache_r->notes->{returnto} = $redir;
+        $apache_r->notes->{returnto} = LJ::create_url( undef, keep_args => 1 );
         return;
     }
 

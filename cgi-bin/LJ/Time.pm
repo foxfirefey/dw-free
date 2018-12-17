@@ -29,6 +29,8 @@ use Time::Local ();
 sub days_in_month
 {
     my ($month, $year) = @_;
+    return unless $month;  # not a mind reader
+
     if ($month == 2)
     {
         return 29 unless $year;  # assume largest
@@ -74,6 +76,9 @@ sub mysqldate_to_time {
     my ($string, $gmt) = @_;
     return undef unless $string =~ /^(\d\d\d\d)-(\d\d)-(\d\d)(?: (\d\d):(\d\d)(?::(\d\d))?)?$/;
     my ($y, $mon, $d, $h, $min, $s) = ($1, $2, $3, $4, $5, $6);
+
+    # return early if we were given "0000-00-00"
+    return undef if "$y-$mon-$d" eq "0000-00-00";
 
     # these need to be set to zero if undefined, to avoid warnings
     $h   ||= 0;

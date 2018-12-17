@@ -16,7 +16,7 @@ use strict;
 use LJ::LangDatFile;
 
 
-use constant MAXIMUM_ITCODE_LENGTH => 80;
+use constant MAXIMUM_ITCODE_LENGTH => 120;
 
 my @day_short   = (qw[Sun Mon Tue Wed Thu Fri Sat]);
 my @day_long    = (qw[Sunday Monday Tuesday Wednesday Thursday Friday Saturday]);
@@ -400,7 +400,7 @@ sub set_text {
     my $oldtextid = $dbh->selectrow_array("SELECT txtid FROM ml_text WHERE lnid=? AND dmid=? AND itid=?", undef, $lnid, $dmid, $itid);
 
     if (defined $text) {
-        my $userid = $opts->{'userid'} + 0;
+        my $userid = ( $opts->{userid} // 0 ) + 0;
         # Strip bad characters
         $text =~ s/\r//;
         my $qtext = $dbh->quote($text);
@@ -416,7 +416,7 @@ sub set_text {
         $txtid = $opts->{'txtid'}+0;
     }
 
-    my $staleness = $opts->{'staleness'}+0;
+    my $staleness = ( $opts->{staleness} // 0 ) + 0;
     $dbh->do("REPLACE INTO ml_latest (lnid, dmid, itid, txtid, chgtime, staleness) ".
              "VALUES ($lnid, $dmid, $itid, $txtid, NOW(), $staleness)");
     return set_error("Error inserting ml_latest: ".$dbh->errstr) if $dbh->err;
@@ -505,10 +505,6 @@ sub get_effective_lang {
     my $lang;
     if (LJ::is_web_context()) {
         $lang = BML::get_language();
-    }
-    if (my $remote = LJ::get_remote()) {
-        # we have a user; try their browse language
-        $lang ||= $remote->prop("browselang");
     }
 
     # did we get a valid language code?
@@ -612,6 +608,20 @@ sub get_text
     $LJ::_ML_USED_STRINGS{$code} = $text if $LJ::IS_DEV_SERVER;
 
     return $text || ($LJ::IS_DEV_SERVER ? "[uhhh: $code]" : "");
+}
+
+# Sometimes we want to force $lang to be the default, because the user
+# generating the text display isn't the same user who will receive the
+# rendered text.  These helper functions make that easier.
+
+sub get_default_text {
+    my ( $code, $vars ) = @_;
+    return LJ::Lang::get_text( undef, $code, undef, $vars );
+}
+
+sub get_default_text_multi {
+    my ( $codes ) = @_;
+    return LJ::Lang::get_text_multi( undef, undef, $codes );
 }
 
 # Loads multiple language strings at once.  These strings
@@ -738,31 +748,13 @@ sub get_lang_names {
     return \@list;
 }
 
+# FIXME: this isn't used anywhere; just falls through to BML::set_language,
+# which only affects the BML code package in the active process. Keeping this
+# as a stub to assist with the gradual transition to non-BML functions.
 sub set_lang {
     my $lang = shift;
 
     my $l = LJ::Lang::get_lang($lang);
-    my $remote = LJ::get_remote();
-    my $r = DW::Request->get;
-
-    # default cookie value to set
-    my $cval = $l->{lncode} . "/" . time();
-
-    # if logged in, change userprop and make cookie expiration
-    # the same as their login expiration
-    my $expires = undef;
-    if ($remote) {
-        $remote->set_prop("browselang", $l->{lncode});
-
-        $expires = $remote->{_session}->{timeexpire} if $remote->{_session}->{exptype} eq 'long';
-    }
-
-    # set cookie
-    $r->add_cookie(
-        name    => 'langpref',
-        value   => $cval,
-        expires => $expires,
-    );
 
     # set language through BML so it will apply immediately
     BML::set_language($l->{lncode});

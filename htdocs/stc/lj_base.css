@@ -1,4 +1,19 @@
+.lj_embedcontent-wrapper {
+    overflow: hidden;
+}
+.lj_embedcontent-ratio {
+    position: relative;
+    height: 0;
+    /* this technique requires a padding top, but we calculate that dynamically and put it inline */
+}
+
 iframe.lj_embedcontent {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+
     border: 0;
 }
 
@@ -20,21 +35,6 @@ form {
 
 .nowrap {
     white-space: nowrap;
-}
-
-.lj_progresscontainer {
-    height: 25px;
-    width: 400px;
-    margin: 1em;
-    background: url(/img/progress/inactive.gif) repeat;
-}
-
-.lj_progressoverlay {
-    background: url(/img/progress/active.gif) repeat;
-}
-
-.lj_progressindefinite {
-    background-image: url(/img/progress/barber.gif);
 }
 
 .lj_hourglass {
@@ -72,13 +72,13 @@ div.lj_ippu_titlebar {
 }
 
 	div.lj_ippu_titlebar div {
-		
+
 	}
 
 	.lj_ippu_titlebar img {
 		opacity: .25;
 	}
-	
+
 		.lj_ippu_titlebar img:hover {
 			opacity: 1;
 		}
@@ -162,6 +162,38 @@ div.lj_ippu_titlebar {
     position:absolute;
     left:-10000px;
     top:auto;
+}
+
+.tag-nav-trigger {
+    vertical-align: bottom;
+    border: none;
+}
+
+.tag-nav-trigger, .tag-nav-actions input {
+    width: 16px;
+    height: 16px;
+    border: none;
+}
+
+.tag-nav-actions.ui-dialog .ui-dialog-content {
+    padding: 0;
+}
+
+.tag-nav-actions .ui-dialog-titlebar {
+    display: none;
+}
+
+.tag-nav-actions.tag-nav-none-selected {
+    pointer-events: none;
+    opacity: 0.35;
+}
+
+.tag-nav-active a {
+    outline: 1px dashed currentColor;
+}
+
+.tag-nav-active a.tag-nav-selected {
+    outline: 2px solid currentColor;
 }
 
 big big big big {  font-size: 100%; }

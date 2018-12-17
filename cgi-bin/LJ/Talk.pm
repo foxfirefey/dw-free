@@ -22,7 +22,6 @@ use LJ::Global::Constants;
 use LJ::Event::JournalNewComment;
 use LJ::Event::JournalNewComment::Edited;
 use LJ::Comment;
-use LJ::EventLogRecord::NewComment;
 use LJ::OpenID;
 use LJ::S2;
 use DW::Captcha;
@@ -70,12 +69,6 @@ sub get_subjecticons
     }
 
     return \%subjecticon;
-}
-
-# entryid-commentid-emailrecipientpassword hash
-sub ecphash {
-    my ($itemid, $talkid, $password) = @_;
-    return "ecph-" . Digest::MD5::md5_hex($itemid . $talkid . $password);
 }
 
 # Returns talkurl with GET args added (don't pass #anchors to this :-)
@@ -265,7 +258,7 @@ sub get_journal_item
     LJ::load_log_props2($u->{'userid'}, [ $itemid ], \%logprops);
     $item->{'props'} = $logprops{$itemid} || {};
 
-    if ($LJ::UNICODE && $logprops{$itemid}->{'unknown8bit'}) {
+    if ( $logprops{$itemid}->{'unknown8bit'} ) {
         LJ::item_toutf8($u, \$item->{'subject'}, \$item->{'event'},
                         $item->{'logprops'}->{$itemid});
     }
@@ -303,12 +296,8 @@ sub check_viewable
         }
     }
 
-    my $host = $apache_r->headers_in->{Host};
-    my $args = scalar $apache_r->args;
-    my $querysep = $args ? "?" : "";
-    my $returnto = "http://" . $host . $apache_r->uri . $querysep . $args;
     $apache_r->notes->{internal_redir} = "/protected";
-    $apache_r->notes->{returnto} = $returnto;
+    $apache_r->notes->{returnto} = LJ::create_url( undef, keep_args => 1 );
     return 0;
 
 }
@@ -1244,14 +1233,12 @@ sub load_comments
         }
     }
 
-    if ($LJ::UNICODE) {
-        foreach (@posts_to_load) {
-            if ($posts->{$_}->{'props'}->{'unknown8bit'}) {
-                LJ::item_toutf8($u, \$posts->{$_}->{'subject'},
-                                \$posts->{$_}->{'body'},
-                                {});
-              }
-        }
+    foreach (@posts_to_load) {
+        if ($posts->{$_}->{'props'}->{'unknown8bit'}) {
+            LJ::item_toutf8($u, \$posts->{$_}->{'subject'},
+                            \$posts->{$_}->{'body'},
+                            {});
+          }
     }
 
     # load users who posted
@@ -1502,6 +1489,7 @@ sub talkform {
                             "itemid", $opts->{ditemid},
                             "journal", $journalu->{'user'},
                             "basepath", $basepath,
+                            "dtid", $opts->{dtid},
                             %{$opts->{styleopts}},
                             );
 
@@ -1591,6 +1579,7 @@ sub talkform {
     $ret .= "<td>";
     $ret .= "<table summary=''>"; # Internal for "From" options
     my $screening = LJ::Talk::screening_level( $journalu, $opts->{ditemid} >> 8 ) || '';
+    $screening = 'A' if $journalu->has_autoscreen( $remote );
 
     if ($editid) {
 
@@ -1605,6 +1594,10 @@ sub talkform {
             $ret .= LJ::img( 'id_user', '', { onclick => 'handleRadios(1);' } ) . "</td>";
             $ret .= "<td align='left'><label for='talkpostfromremote'>";
             $ret .= BML::ml( ".opt.loggedin", { username => "<strong>$logged_in</strong>" } ) . "</label>\n";
+
+            $ret .= " " . $BML::ML{'.opt.willscreen'} if $screening eq 'A'
+                    || ( $screening eq 'R' && !$remote->is_validated )
+                    || ( $screening eq 'F' && !$journalu->trusts($remote) ) ;
 
             $ret .= "<input type='hidden' name='usertype' value='cookieuser' />";
             $ret .= "<input type='hidden' name='cookieuser' value='$remote->{'user'}' id='cookieuser' />\n";
@@ -1648,7 +1641,7 @@ sub talkform {
                 $ret .= "<strong>$logged_in</strong>";
 
                 # show willscreen if a) all comments are screened b) anonymous is screened and OpenID user not validated, c) non-access is screened and OpenID user
-                # is not on access list
+                # is not on access list d) this user is being automatically screened (in which case $screening has been forced to 'A')
                 $ret .= $BML::ML{'.opt.willscreen'} if $screening eq 'A' || ( $screening eq 'R' && !$remote->is_validated )
                     || ( $screening eq 'F' && !$journalu->trusts($remote) ) ;
                 $ret .= "</td></tr>\n";
@@ -1910,7 +1903,7 @@ sub talkform {
     } # end edit check
 
     my $basesubject = $form->{subject} || "";
-    if ($opts->{replyto} && !$basesubject && $parpost->{'subject'}) {
+    if (!$editid && $opts->{replyto} && !$basesubject && $parpost->{'subject'}) {
         $basesubject = $parpost->{'subject'};
         $basesubject =~ s/^Re:\s*//i;
         $basesubject = "Re: $basesubject";
@@ -2134,7 +2127,7 @@ sub icon_dropdown {
     my %res;
     if ( $remote ) {
         LJ::do_request({ mode => "login",
-                         ver  => ($LJ::UNICODE ? "1" : "0"),
+                         ver  => $LJ::PROTOCOL_VER,
                          user => $remote->{'user'},
                          getpickws => 1,
                        }, \%res, { "noauth" => 1, "userid" => $remote->{'userid'} });
@@ -2224,6 +2217,77 @@ sub init_iconbrowser_js {
     );
 
     return @list;
+}
+
+# convenience/deduplication function for QR, cut tag, & icon browser JS loading
+# args: hash of opts to determine which JS files to load (iconbrowser, siteskin, lastn, noqr)
+# returns: nothing, just calls need_res
+sub init_s2journal_js {
+    my %opts = @_;
+
+    # load for quick reply (every view except ReplyPage)
+    LJ::need_res( { group => "jquery" }, qw(
+            js/jquery/jquery.ui.core.js
+            stc/jquery/jquery.ui.core.css
+            js/jquery/jquery.ui.widget.js
+            js/jquery.quickreply.js
+            js/jquery.threadexpander.js
+        ) ) unless $opts{noqr};
+
+    # this is only used on lastn-type pages (DayPage, RecentPage, FriendsPage)
+    LJ::need_res( { group => "jquery" }, qw(
+            stc/css/components/quick-reply.css
+        ) ) if $opts{lastn};
+
+    # load for userpicselect
+    LJ::need_res( init_iconbrowser_js( 1 ) ) if $opts{iconbrowser};
+
+    # if we're using the site skin, don't override the jquery-ui theme,
+    # as that's already included
+    LJ::need_res( { group => "jquery" }, qw(
+            stc/jquery/jquery.ui.theme.smoothness.css
+        ) ) unless $opts{siteskin};
+
+    # load for ajax cuttag - again, only needed on lastn-type pages
+    LJ::need_res( 'js/cuttag-ajax.js' ) if $opts{lastn};
+    LJ::need_res( { group => "jquery" }, qw(
+            js/jquery/jquery.ui.widget.js
+            js/jquery.cuttag-ajax.js
+        ) ) if $opts{lastn};
+}
+
+# convenience function for keyboard shortcuts
+# args: $remote and $p for adding javascript to header
+# returns: nothing, just calls need_res
+sub init_s2journal_shortcut_js {
+    my ( $remote, $p ) = @_;
+
+    # skip everything if there's no remote user, or if neither opt_shortcuts
+    # nor opt_shortcuts_touch is set.
+    return unless $remote && ( $remote->prop( "opt_shortcuts" ) ||  $remote->prop( "opt_shortcuts_touch") );
+    
+    my $connect_string = "";
+    
+    LJ::need_res( { group => "jquery" }, "js/shortcuts.js" );
+    LJ::need_res( { group => "jquery" }, "js/jquery.shortcuts.nextentry.js" );
+    
+    $p->{'head_content'} .= "  <script type='text/javascript'>\n  var dw_shortcuts = {\n";
+    if ( $remote->prop( "opt_shortcuts" ) ) {
+        LJ::need_res( { group => "jquery" }, "js/mousetrap.js" );
+        $p->{'head_content'} .= "    keyboard: {\n";
+        
+        my $nextKey = $remote->prop( "opt_shortcuts_next" );
+        my $prevKey = $remote->prop( "opt_shortcuts_prev" );
+        $p->{'head_content'} .= "      nextEntry: '$nextKey',\n      prevEntry: '$prevKey'\n    }\n";
+        $connect_string = ",";
+    }
+    if ( $remote->prop( "opt_shortcuts_touch" ) ) {
+        LJ::need_res( { group => "jquery" }, "js/jquery.touchSwipe.js" );
+        my $nextTouch = $remote->prop( "opt_shortcuts_touch_next" );
+        my $prevTouch = $remote->prop( "opt_shortcuts_touch_prev" );
+        $p->{'head_content'} .= "$connect_string\n    touch: {\n      nextEntry: '$nextTouch',\n      prevEntry: '$prevTouch'\n    }\n";
+    }
+    $p->{'head_content'} .= "  };\n  </script>\n";
 }
 
 # generate the javascript code for the icon browser
@@ -2350,8 +2414,8 @@ sub mark_comment_as_spam {
 
     # step 2a: if it's a suspended user, don't add, but pretend that we were successful
     if ($posterid) {
-    	my $posteru = LJ::want_user($posterid);
-    	return 1 if $posteru->is_suspended;
+        my $posteru = LJ::want_user($posterid);
+        return 1 if $posteru->is_suspended;
     }
 
     # step 2b: if it was an anonymous comment, attempt to get comment IP to make some use of the report
@@ -2613,7 +2677,6 @@ package LJ::Talk::Post;
 
 use Text::Wrap;
 use LJ::Entry;
-use LJ::EventLogRecord::NewComment;
 
 sub indent {
     my $a = shift;
@@ -2785,8 +2848,6 @@ sub enter_comment {
         if ( LJ::is_enabled('esn') ) {
             my $cmtobj = LJ::Comment->new($journalu, jtalkid => $jtalkid);
             push @jobs, LJ::Event::JournalNewComment->new($cmtobj)->fire_job;
-            push @jobs, LJ::EventLogRecord::NewComment->new($cmtobj)->fire_job;
-
         }
 
         if ( @LJ::SPHINX_SEARCHD ) {
@@ -2987,7 +3048,8 @@ sub init {
     my $iprops = $item->{'props'};
     my $ditemid = $init->{'ditemid'}+0;
 
-    my $talkurl = $journalu->journal_base . "/$ditemid.html";
+    my $entry = LJ::Entry->new( $journalu, ditemid => $ditemid );
+    my $talkurl = $entry->url;
     $init->{talkurl} = $talkurl;
 
     ### load users
@@ -3002,24 +3064,15 @@ sub init {
         }
     }
 
-    # anonymous/cookie users cannot authenticate with ecphash
-    if ($form->{'ecphash'} && $form->{'usertype'} ne "user") {
-        $mlerr->( "$SC.error.badusername2", { sitename => $LJ::SITENAMESHORT,
-                  aopts => "href='$LJ::SITEROOT/lostinfo'" } );
-        return undef;
-    }
-
     my $cookie_auth;
-    # either we are posting from the comment email notification form
-    # or we are posting from talkpost, as currently logged-in user
-    if ( ( $form->{usertype} eq "user" && exists $form->{ecphash} ) ||
-        ($form->{'usertype'} eq "cookieuser")) {
+    # we are posting from talkpost, as currently logged-in user
+    if ( $form->{usertype} eq "cookieuser" ) {
         my $userpost = $form->{'userpost'} || $form->{'cookieuser'};
         $mlerr->("$SC.error.lostcookie")
             unless $remote && $remote->{'user'} eq $userpost;
         return undef if @$errret;
 
-        $cookie_auth = 1 unless exists $form->{ecphash};
+        $cookie_auth = 1;
         $form->{'userpost'} = $remote->{'user'};
         $form->{'usertype'} = "user";
     }
@@ -3038,7 +3091,6 @@ sub init {
     my $up;             # user posting
     my $exptype;        # set to long if ! after username
     my $ipfixed;        # set to remote  ip if < after username
-    my $used_ecp;       # ecphash was validated and used
 
     if ($form->{'usertype'} eq "user") {
         if ($form->{'userpost'}) {
@@ -3054,9 +3106,10 @@ sub init {
                 ### see if the user is banned from posting here
                 $mlerr->("$SC.error.banned$iscomm") if $journalu->has_banned( $up );
 
-                # TEMP until we have better openid support
-                if ($up->is_identity && $journalu->{'opt_whocanreply'} eq "reg") {
-                    $mlerr->("$SC.error.noopenid");
+                # Reject OpenIDs that are neither validated nor granted access by the user
+                if ($up->is_identity && $journalu->{'opt_whocanreply'} eq "reg"
+                        && ! ( $up->is_validated || $journalu->trusts( $remote ) ) ) {
+                    $mlerr->("$SC.error.noopenidpost", { aopts1 => "href='$LJ::SITEROOT/changeemail'", aopts2 => "href='$LJ::SITEROOT/register'" })
                 }
 
                 unless ( $up->is_person || ( $up->is_identity && $cookie_auth ) ) {
@@ -3068,30 +3121,16 @@ sub init {
                 # don't want to re-authenticate, so just skip this
                 unless ($cookie_auth) {
 
-                    # if ecphash present, authenticate on that
-                    if ($form->{'ecphash'}) {
-
-                        if ($form->{'ecphash'} eq
-                            LJ::Talk::ecphash($itemid, $form->{'parenttalkid'}, $up->password))
-                        {
-                            $used_ecp = 1;
-                        } else {
-                            $mlerr->( "$SC.error.badpassword2",
-                                { aopts => "href='$LJ::SITEROOT/lostinfo'" } );
-                        }
-
-                    # otherwise authenticate on username/password
+                    # authenticate on username/password
+                    my $ok;
+                    if ( $form->{response} ) {
+                        $ok = LJ::challenge_check_login( $up, $form->{chal}, $form->{response} );
                     } else {
-                        my $ok;
-                        if ($form->{response}) {
-                            $ok = LJ::challenge_check_login($up, $form->{chal}, $form->{response});
-                        } else {
-                            $ok = LJ::auth_okay($up, $form->{'password'}, $form->{'hpassword'});
-                        }
-                        $mlerr->( "$SC.error.badpassword2",
-                                { aopts => "href='$LJ::SITEROOT/lostinfo'" } )
-                            unless $ok;
+                        $ok = LJ::auth_okay( $up, $form->{password}, $form->{hpassword} );
                     }
+                    $mlerr->( "$SC.error.badpassword2",
+                            { aopts => "href='$LJ::SITEROOT/lostinfo'" } )
+                        unless $ok;
                 }
 
                 # if the user chooses to log in, do so
@@ -3182,33 +3221,31 @@ sub init {
     }
 
     # validate the challenge/response value (anti-spammer)
-    unless ($used_ecp) {
-        my $chrp_err;
-        if (my $chrp = $form->{'chrp1'}) {
-            my ($c_ditemid, $c_uid, $c_time, $c_chars, $c_res) =
-                split(/\-/, $chrp);
-            my $chal = "$c_ditemid-$c_uid-$c_time-$c_chars";
-            my $secret = LJ::get_secret($c_time);
-            my $res = Digest::MD5::md5_hex($secret . $chal);
-            if ($res ne $c_res) {
-                $chrp_err = "invalid";
-            } elsif ($c_time < time() - 2*60*60) {
-                $chrp_err = "too_old" if $LJ::REQUIRE_TALKHASH_NOTOLD;
-            }
-        } else {
-            $chrp_err = "missing";
+    my $chrp_err;
+    if ( my $chrp = $form->{'chrp1'} ) {
+        my ( $c_ditemid, $c_uid, $c_time, $c_chars, $c_res ) =
+            split( /\-/, $chrp );
+        my $chal = "$c_ditemid-$c_uid-$c_time-$c_chars";
+        my $secret = LJ::get_secret( $c_time );
+        my $res = Digest::MD5::md5_hex( $secret . $chal );
+        if ( $res ne $c_res ) {
+            $chrp_err = "invalid";
+        } elsif ( $c_time < time() - 2*60*60 ) {
+            $chrp_err = "too_old" if $LJ::REQUIRE_TALKHASH_NOTOLD;
         }
-        if ($chrp_err) {
-            my $ip = LJ::get_remote_ip();
-            if ($LJ::DEBUG{'talkspam'}) {
-                my $ruser = $remote ? $remote->{user} : "[nonuser]";
-                print STDERR "talkhash error: from $ruser \@ $ip - $chrp_err - $talkurl\n";
-            }
-            if ($LJ::REQUIRE_TALKHASH) {
-                return $err->("Sorry, form expired.  Press back, copy text, reload form, paste into new form, and re-submit.")
-                    if $chrp_err eq "too_old";
-                return $err->("Missing parameters");
-            }
+    } else {
+        $chrp_err = "missing";
+    }
+    if ( $chrp_err ) {
+        my $ip = LJ::get_remote_ip();
+        if ( $LJ::DEBUG{'talkspam'} ) {
+            my $ruser = $remote ? $remote->{user} : "[nonuser]";
+            print STDERR "talkhash error: from $ruser \@ $ip - $chrp_err - $talkurl\n";
+        }
+        if ( $LJ::REQUIRE_TALKHASH ) {
+            return $err->("Sorry, form expired.  Press back, copy text, reload form, paste into new form, and re-submit.")
+                if $chrp_err eq "too_old";
+            return $err->("Missing parameters");
         }
     }
 
@@ -3291,15 +3328,6 @@ sub init {
     return $err->("<?badinput?>") unless LJ::text_in($form);
 
     $init->{unknown8bit} = 0;
-    unless (LJ::is_ascii($form->{'body'}) && LJ::is_ascii($form->{'subject'})) {
-        if ($LJ::UNICODE) {
-            # no need to check if they're well-formed, we did that above
-        } else {
-            # so rest of site can change chars to ? marks until
-            # default user's encoding is set.  (legacy support)
-            $init->{unknown8bit} = 1;
-        }
-    }
 
     my ($bl, $cl) = LJ::text_length($form->{'body'});
     if ($cl > LJ::CMAX_COMMENT) {
@@ -3321,15 +3349,17 @@ sub init {
     # figure out whether to post this comment screened
     my $state = 'A';
     my $screening = LJ::Talk::screening_level($journalu, $ditemid >> 8) || "";
-    if (!$form->{editid} && ($screening eq 'A' ||
+    $screening = 'A' if $journalu->has_autoscreen( $up );
+    if ($screening eq 'A' ||
         ($screening eq 'R' && ! $up) ||
-        ($screening eq 'F' && !($up && $journalu->trusts_or_has_member( $up ))))) {
+        ($screening eq 'F' && !($up && $journalu->trusts_or_has_member( $up )))) {
         $state = 'S';
     }
 
     my $parent = {
         state     => $parpost->{state},
         talkid    => $partid,
+        posterid  => $parpost->{posterid},
     };
     my $comment = {
         u               => $up,
@@ -3529,6 +3559,9 @@ sub post_comment {
     # cluster tracking
     LJ::mark_user_active($comment->{u}, 'comment');
 
+    DW::Stats::increment( 'dw.action.comment.post', 1, [ "journal_type:" . $journalu->journaltype_readable,
+            "poster_type:" . ( ref $comment->{u} ? $comment->{u}->journaltype_readable : 'anonymous' ) ] );
+
     LJ::Hooks::run_hooks('new_comment', $journalu->{userid}, $item->{itemid}, $jtalkid);
 
     return 1;
@@ -3583,6 +3616,12 @@ sub edit_comment {
     # the caller wants to know the comment's talkid.
     $comment->{talkid} = $comment_obj->jtalkid;
 
+    # If we need to rescreen the comment, do so now.
+    my $state = $comment->{state} || "";
+    if ( $state eq 'S') {
+        LJ::Talk::screen_comment($journalu, $item->{itemid}, $comment->{talkid});
+    }
+
     # cluster tracking
     LJ::mark_user_active($pu, 'comment');
 
@@ -3592,7 +3631,6 @@ sub edit_comment {
 
         if ( LJ::is_enabled('esn') ) {
             push @jobs, LJ::Event::JournalNewComment::Edited->new($comment_obj)->fire_job;
-            push @jobs, LJ::EventLogRecord::NewComment->new($comment_obj)->fire_job;
         }
 
         if ( @LJ::SPHINX_SEARCHD ) {
@@ -3604,6 +3642,9 @@ sub edit_comment {
 
         $sclient->insert_jobs( @jobs );
     }
+
+    DW::Stats::increment( 'dw.action.comment.edit', 1, [ "journal_type:" . $journalu->journaltype_readable,
+            "poster_type:" . $pu ? $pu->journaltype_readable : 'anonymous' ] );
 
     LJ::Hooks::run_hooks('edit_comment', $journalu->{userid}, $item->{itemid}, $comment->{talkid});
 
@@ -3645,11 +3686,13 @@ sub make_preview {
 
     $ret .= "$BML::ML{'/talkpost_do.bml.preview.poster'} ";
     # displays the username or openid url of the commenter, or anonymous otherwise
-    if ($form->{'usertype'} eq 'cookieuser' || $form->{'usertype'} eq 'openid_cookie') {
+    my $has_remote = LJ::isu( $remote );
+    my $has_cookie = { cookieuser => $has_remote, openid_cookie => $has_remote };
+    if ( $has_cookie->{ $form->{usertype} } ) {
         $ret .= $remote->ljuser_display;
     } elsif ($form->{'usertype'} eq 'openid') {
         $ret .= BML::ml( ".preview.unauthenticated_openid", { openid => $form->{oidurl} } );
-    } elsif ($form->{'usertype'} eq 'anonymous') {
+    } else {  # anonymous usertype or not logged in
         $ret .= $BML::ML{'/talkpost_do.bml.preview.anonymous'};
     }
     $ret .= "<br />";
@@ -3712,7 +3755,12 @@ sub make_preview {
             unless $_ eq 'body' || $_ eq 'subject' || $_ eq 'prop_opt_preformatted' || $_ eq 'editreason';
     }
 
-    $ret .= "<br /><input type='submit' value='$BML::ML{'/talkpost_do.bml.preview.submit'}' />\n";
+    my $post_disabled = $u->does_not_allow_comments_from( $remote ) || $u->does_not_allow_comments_from_unconfirmed_openid( $remote );
+    if ($post_disabled) {
+        $ret .= "<div class='ui-state-error'>$BML::ML{'/talkpost.bml.error.nocomment_quick'}</div>";
+    }
+    my $disabling_extra = $post_disabled ? ' disabled="disabled" class="ui-state-disabled"' : '';
+    $ret .= "<br /><input type='submit' $disabling_extra value='$BML::ML{'/talkpost_do.bml.preview.postcomment'}' />\n";
     $ret .= "<input type='submit' name='submitpreview' value='$BML::ML{'talk.btn.preview'}' />\n";
     $ret .= "<span id='moreoptions-container'></span>\n";
     if ($LJ::SPELLER) {

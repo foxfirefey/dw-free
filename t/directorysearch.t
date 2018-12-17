@@ -20,8 +20,7 @@ use warnings;
 
 use Test::More;
 
-use lib "$ENV{LJHOME}/cgi-bin";
-BEGIN { require 'ljlib.pl'; }
+BEGIN { $LJ::_T_CONFIG = 1; require "$ENV{LJHOME}/cgi-bin/ljlib.pl"; }
 use LJ::Test;
 use LJ::Directory::Search;
 use LJ::ModuleCheck;
@@ -212,9 +211,8 @@ memcache_stress(sub {
 }
 });
 
-# search with a shitload of ids (force it to use Mogile for set handles)
+# search with a huge number of ids (force it to use blobstore for set handles)
 SKIP: {
-    skip "No Mogile client installed", 6 unless LJ::mogclient();
     my ($search, $res);
 
     memcache_stress(sub {
@@ -226,6 +224,4 @@ SKIP: {
         is($res->pages, 1, "50 pages");
         is_deeply([$res->userids], [reverse(51..100)], "got the right results back");
     });
-
-
 }

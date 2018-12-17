@@ -3,7 +3,7 @@
 # Authors:
 #      Afuna <coder.dw@afunamatata.com>
 #
-# Copyright (c) 2013 by Dreamwidth Studios, LLC.
+# Copyright (c) 2013-2018 by Dreamwidth Studios, LLC.
 #
 # This code is a refactoring and extension of code originally forked
 # from the LiveJournal project owned and operated by Live Journal, Inc.
@@ -30,9 +30,9 @@ use strict;
 use LJ::Protocol;
 
 use Date::Parse;
-use HTML::Entities;
 use IO::Handle;
 use XML::Simple;
+use DW::Media;
 
 my $workdir = "/tmp";
 
@@ -123,7 +123,7 @@ sub _process {
 
     # post!
     my $post_error;
-    LJ::Protocol::do_request( "postevent", $req, \$post_error, { noauth => 1 } );
+    LJ::Protocol::do_request( "postevent", $req, \$post_error, { noauth => 1, allow_truncated_subject => 1 } );
     return $self->send_error( LJ::Protocol::error_message( $post_error ) ) if $post_error;
 
     $self->dblog( s => $self->{subject} );
@@ -205,30 +205,61 @@ sub _set_props {
     $props->{opt_noemail} = 1
       if $post_headers{comments}    =~ /noemail/i
       || $u->{emailpost_comments} =~ /noemail/i;
+    if ( exists $post_headers{screenlevel} ) {
+        if ( $post_headers{screenlevel} =~ /^all$/i ) {
+            $props->{opt_screening} = 'A';
+        } elsif ( $post_headers{screenlevel} =~ /^untrusted$/i ) {
+            $props->{opt_screening} = 'F';
+        } elsif ( $post_headers{screenlevel} =~ /^(anonymous|anon)$/i ) {
+            $props->{opt_screening} = 'R'; # needs-Remote
+        } elsif ( $post_headers{screenlevel} =~ /^(disabled|none)$/i ) {
+            $props->{opt_screening} = 'N';
+        } elsif ( $post_headers{screenlevel} ne '' ) {
+            $props->{opt_screening} = 'A';
+            $self->send_error( "Unrecognized screening keyword. Your entry was posted with all comments screened.",
+                               { nolog => 1 } );
+        } else { # blank
+            $props->{opt_screening} = ''; # User default
+        }
+    } else { # unspecified
+        $props->{opt_screening} = ''; # User default
+    }
 
     my $security;
     my $amask;
+    # "lc" is right here because groupnames are forcibly lowercased in
+    # LJ::User->trust_groups;
     $security = lc $post_headers{security} ||
-        $u->emailpost_security;
+        $u->emailpost_security; # FIXME: relies on emailpost_security ne 'usemask'?
 
     if ( $security =~ /^(public|private|friends|access)$/ ) {
         if ( $1 eq 'friends' or $1 eq 'access' ) {
             $security = 'usemask';
             $amask = 1;
         }
-    } elsif ( $security ) { # Assume a friendgroup if unknown security mode.
-        # Get the mask for the requested friends group, or default to private.
-        my $group = $u->trust_groups( name => $security );
-        if ($group) {
-            $amask = (1 << $group->{groupnum});
-            $security = 'usemask';
-        } else {
+    } elsif ( $security ) { # Assume a trust group list if unknown security.
+        # Get the mask for the requested trust group list, discarding those
+        # that don't exist.
+        $amask = 0;
+        my @unrecognized = ();
+        foreach my $groupname ( split( /\s*,\s*/, $security ) ) {
+            my $group = $u->trust_groups( name => $groupname );
+            if ( $group ) {
+                $amask |= ( 1 << $group->{groupnum} )
+            } else {
+                push @unrecognized, $groupname;
+            }
+        }
+
+        $security = 'usemask';
+
+        if ( @unrecognized ) {
             # send the error, but not shortcircuiting the posting process
             # probably the only time that we call $self->send_error inside of a convenience sub
-            $self->send_error( "Access group \"$security\" not found.  Your journal entry was posted privately.",
+            my $unrecognized = join( ', ', @unrecognized );
+            $self->send_error( "Access group(s) \"$unrecognized\" not found. Your journal entry was posted to the other groups, or privately if no groups exist.",
                    { nolog => 1 }
             );
-            $security = 'private';
         }
     }
 
@@ -297,6 +328,8 @@ sub _upload_images {
 
     my @imgs = $self->get_entity( $self->{_entity}, 'image' );
     return 1 unless scalar @imgs;
+
+    return 1401 unless DW::Media->can_upload_media( $self->{u} );  # error code from insert_images
 
     my @images;
     foreach my $img_entity ( @imgs ) {
@@ -513,7 +546,8 @@ sub _cleanup_mobile_carriers {
         return $self->err( "Unable to find XML content in PictureMail message." )
             unless $xml_string;
 
-        HTML::Entities::decode_entities( $xml_string );
+        LJ::dhtml( $xml_string ); # $xml_string is being modified by this function call
+                                  # special characters are replaced with equivalent HTML entities
         my $xml = eval { XML::Simple::XMLin( $xml_string ); };
         return $self->err( "Unable to parse XML content in PictureMail message." )
             if ! $xml || $@;
@@ -522,8 +556,7 @@ sub _cleanup_mobile_carriers {
             unless $xml->{messageContents}->{type} eq 'PICTURE';
 
         my $url =
-          HTML::Entities::decode_entities(
-            $xml->{messageContents}->{mediaItems}->{mediaItem}->{url} );
+          LJ::dhtml( $xml->{messageContents}->{mediaItems}->{mediaItem}->{url} );
         $url = LJ::trim($url);
         $url =~ s#</?url>##g;
 
@@ -550,7 +583,7 @@ sub _cleanup_mobile_carriers {
         my $ua_rv = $ua->get( $url, ':content_file' => $tempfile );
 
         $self->{body} = $xml->{messageContents}->{messageText};
-        $self->{body} = ref $self->{body} ? "" : HTML::Entities::decode( $self->{body} );
+        $self->{body} = ref $self->{body} ? "" : LJ::dhtml( $self->{body} );
 
         if ($ua_rv->is_success) {
             # (re)create a basic mime entity, so the rest of the

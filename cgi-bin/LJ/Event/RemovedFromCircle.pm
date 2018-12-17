@@ -54,17 +54,15 @@ my @_ml_strings_en = qw(
 sub as_email_subject {
     my ( $self, $u ) = @_;
 
-    if ( $self->trusted ) {
-        return LJ::Lang::get_text( $u->prop('browselang'), 'esn.removedfromcircle.trusted.subject', undef, { who => $self->fromuser->display_username } );
-    } else { # watched
-        return LJ::Lang::get_text( $u->prop('browselang'), 'esn.removedfromcircle.watched.subject', undef, { who => $self->fromuser->display_username } );
-    }
+    my $str = $self->trusted ? 'esn.removedfromcircle.trusted.subject'
+                             : 'esn.removedfromcircle.watched.subject';
+
+    return LJ::Lang::get_default_text( $str, { who => $self->fromuser->display_username } );
 }
 
 sub _as_email {
     my ( $self, $u, $is_html ) = @_;
 
-    my $lang        = $u->prop( 'browselang' );
     my $user        = $is_html ? $u->ljuser_display : $u->display_username;
     my $poster      = $is_html ? $self->fromuser->ljuser_display : $self->fromuser->display_username;
     my $postername  = $self->fromuser->user;
@@ -72,7 +70,7 @@ sub _as_email {
     my $journal_profile = $self->fromuser->profile_url;
 
     # Precache text lines
-    LJ::Lang::get_text_multi( $lang, undef, \@_ml_strings_en );
+    LJ::Lang::get_default_text_multi( \@_ml_strings_en );
 
     my $vars = {
         who         => $self->fromuser->display_username,
@@ -83,20 +81,20 @@ sub _as_email {
     };
 
     if ( $self->trusted ) {
-        return LJ::Lang::get_text( $lang, 'esn.removedfromcircle.trusted.email_text', undef, $vars ) .
-            $self->format_options( $is_html, $lang, $vars,
+        return LJ::Lang::get_default_text( 'esn.removedfromcircle.trusted.email_text', $vars ) .
+            $self->format_options( $is_html, undef, $vars,
             {
-                'esn.remove_trust'    => [ !$u->trusts( $self->fromuser ) ? 0 : 1, "$LJ::SITEROOT/manage/circle/add?user=$postername" ],
+                'esn.remove_trust'    => [ !$u->trusts( $self->fromuser ) ? 0 : 1, "$LJ::SITEROOT/circle/$postername/edit" ],
                 'esn.post_entry'      => [ 2, "$LJ::SITEROOT/update" ],
                 'esn.edit_friends'    => [ 3, "$LJ::SITEROOT/manage/circle/edit" ],
                 'esn.edit_groups'     => [ 4, "$LJ::SITEROOT/manage/circle/editfilters" ],
             }
         );
     } else { # watched
-        return LJ::Lang::get_text( $lang, 'esn.removedfromcircle.watched.email_text', undef, $vars ) .
-            $self->format_options( $is_html, $lang, $vars,
+        return LJ::Lang::get_default_text( 'esn.removedfromcircle.watched.email_text', $vars ) .
+            $self->format_options( $is_html, undef, $vars,
             {
-                'esn.remove_watch'    => [ !$u->watches( $self->fromuser ) ? 0 : 1, "$LJ::SITEROOT/manage/circle/add?user=$postername" ],
+                'esn.remove_watch'    => [ !$u->watches( $self->fromuser ) ? 0 : 1, "$LJ::SITEROOT/circle/$postername/edit" ],
                 'esn.post_entry'      => [ 2, "$LJ::SITEROOT/update" ],
                 'esn.edit_friends'    => [ 3, "$LJ::SITEROOT/manage/circle/edit" ],
                 'esn.edit_groups'     => [ 4, "$LJ::SITEROOT/manage/circle/editfilters" ],
@@ -153,11 +151,11 @@ sub as_html_actions {
 
     my $ret .= "<div class='actions'>";
     if ( $self->trusted ) {
-        $ret .= "<a href='$LJ::SITEROOT/manage/circle/add?user=" . $fromuser->user . "'>Remove Access</a> |"
+        $ret .= "<a href='$LJ::SITEROOT/circle/" . $fromuser->user . "/edit'>Remove Access</a> |"
             if $u->trusts( $fromuser );
         $ret .= " <a href='" . $fromuser->profile_url . "'>View Profile</a>";
     } else { # watched
-        $ret .= "<a href='$LJ::SITEROOT/manage/circle/add?user=" . $fromuser->user . "'>Unsubscribe</a> |"
+        $ret .= "<a href='$LJ::SITEROOT/circle/" . $fromuser->user . "/edit'>Unsubscribe</a> |"
             if $u->watches( $fromuser );
         $ret .= " <a href='" . $fromuser->profile_url . "'>View Profile</a>";
     }

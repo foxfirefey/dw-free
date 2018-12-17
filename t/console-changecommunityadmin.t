@@ -21,8 +21,7 @@ use warnings;
 
 use Test::More tests => 9;
 
-use lib "$ENV{LJHOME}/cgi-bin";
-BEGIN { require 'ljlib.pl'; }
+BEGIN { $LJ::_T_CONFIG = 1; require "$ENV{LJHOME}/cgi-bin/ljlib.pl"; }
 use LJ::Console;
 use LJ::Test qw (temp_user temp_comm);
 local $LJ::T_NO_COMMAND_PRINT = 1;
@@ -65,6 +64,6 @@ is($run->("change_community_admin " . $comm->user . " " . $u->user),
 
 $refresh->();
 ok( $u->can_manage( $comm ), "Verified user is maintainer" );
-ok( $u->email_raw eq $comm->email_raw, "Addresses match" );
+ok( $u->has_same_email_as( $comm ), "Addresses match" );
 ok(!$comm->password, "Password cleared");
 $u->revoke_priv("communityxfer");

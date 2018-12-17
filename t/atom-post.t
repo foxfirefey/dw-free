@@ -20,8 +20,7 @@ use warnings;
 
 use Test::More;
 
-use lib "$ENV{LJHOME}/cgi-bin";
-BEGIN { require 'ljlib.pl'; }
+BEGIN { $LJ::_T_CONFIG = 1; require "$ENV{LJHOME}/cgi-bin/ljlib.pl"; }
 use LJ::Test;
 
 if ( LJ::Test::check_memcache ) {
@@ -39,6 +38,8 @@ use DW::Routing;
 # so that entries can be posted to community journals
 $LJ::EVERYONE_VALID = 1;
 
+$LJ::USE_SSL = 1 if $LJ::USE_HTTPS_EVERYWHERE && $LJ::SSLROOT;
+
 my $u = temp_user();
 my $pass = "foopass";
 $u->set_password( $pass );
@@ -54,11 +55,12 @@ sub do_request {
     my $remote = delete $opts{remote} || $u;
     my $password = delete $opts{password} || $remote->password;
 
-    $uri =~ m!http://([^.]+)!;
+    $uri =~ m!https?://([^.]+)!;
     my $user_subdomain = $1 eq "www" ? "" : $1;
 
     my %routing_data = ();
     $routing_data{username} = $user_subdomain if $user_subdomain;
+    $routing_data{ssl} = 1 if $LJ::USE_SSL;
 
     my $input = delete $data->{input};
 
@@ -129,7 +131,7 @@ sub check_entry {
 note( "Authentication" );
 do_request( GET => $u->atom_service_document );
 is( $r->status, $r->HTTP_UNAUTHORIZED, "Did not pass any authorization information." );
-is( $r->header_in( "Content-Type" ), "text/plain", "Error content type" );
+is( $r->content_type, "text/plain", "Error content type" );
 
 # intentionally break authorization
 do_request( GET => $u->atom_service_document, authenticate => 1, password => $u->password x 3 );
@@ -148,7 +150,7 @@ is( $r->status, $r->HTTP_METHOD_NOT_ALLOWED, "Service document needs GET." );
 
 do_request( GET => $u->atom_service_document, authenticate => 1 );
 is( $r->status, $r->HTTP_OK, "Got service document." );
-like( $r->header_in( "Content-Type" ), qr#^\Qapplication/atomsvc+xml\E#, "Service content type" );
+like( $r->content_type, qr#^\Qapplication/atomsvc+xml\E#, "Service content type" );
 my $service_document_xml = $r->response_content;
 
 note( "Categories document." );
@@ -164,7 +166,7 @@ is( $r->status, $r->HTTP_METHOD_NOT_ALLOWED, "Categories document needs GET." );
 
 do_request( GET => $u->atom_base . "/entries/tags", authenticate => 1 );
 is( $r->status, $r->HTTP_OK, "Got categories document." );
-like( $r->header_in( "Content-Type" ), qr#^\Qapplication/atomcat+xml\E#, "Categories document type" );
+like( $r->content_type, qr#^\Qapplication/atomcat+xml\E#, "Categories document type" );
 my $categories_document_xml = $r->response_content;
 
 SKIP: {
@@ -216,7 +218,7 @@ is( $r->status, $r->HTTP_UNAUTHORIZED, "Entry creation protected by authorizatio
 
 do_request( POST => $u->atom_base . "/entries", authenticate => 1, data => { input => $atom_entry->as_xml } );
 is( $r->status, $r->HTTP_CREATED, "POSTed new entry" );
-is( $r->header_in( "Content-Type" ), "application/atom+xml", "AtomAPI entry content type" );
+is( $r->content_type, "application/atom+xml", "AtomAPI entry content type" );
 
 note( "Double-check posted entry." );
 $entry_obj = LJ::Entry->new( $u, jitemid => 1 );
@@ -245,7 +247,7 @@ is( $r->status, $r->HTTP_UNAUTHORIZED, "Entries feed needs authorization." );
 
 do_request( GET => $u->atom_base . "/entries", authenticate => 1 );
 is( $r->status, $r->HTTP_OK, "Retrieved entry list" );
-is( $r->header_in( "Content-Type" ), "application/atom+xml", "AtomAPI entry content type" );
+is( $r->content_type, "application/atom+xml", "AtomAPI entry content type" );
 
 my $feed = XML::Atom::Feed->new( \ $r->response_content );
 my @entries = $feed->entries;
@@ -382,7 +384,7 @@ note( "Checking community functionality." );
     # community you are a member of
     do_request( GET => $memberof_cu->atom_service_document, authenticate => 1 );
     is( $r->status, $r->HTTP_OK, "Got service document." );
-    like( $r->header_in( "Content-Type" ), qr#^\Qapplication/atomsvc+xml\E#, "Service content type" );
+    like( $r->content_type, qr#^\Qapplication/atomsvc+xml\E#, "Service content type" );
 
     SKIP: {
         skip "No XML::Atom::Service/XML::Atom::Categories module installed.", 8
@@ -429,7 +431,7 @@ note( "Checking community functionality." );
     # community you have posting access to
     do_request( POST => $memberof_cu->atom_base . "/entries", authenticate => 1, data => { input => $atom_entry->as_xml } );
     is( $r->status, $r->HTTP_CREATED, "POSTed new entry" );
-    is( $r->header_in( "Content-Type" ), "application/atom+xml", "AtomAPI entry content type" );
+    is( $r->content_type, "application/atom+xml", "AtomAPI entry content type" );
 
     note( "Double-check posted entry (community)." );
     $entry_obj = LJ::Entry->new( $memberof_cu, jitemid => 1 );
@@ -461,7 +463,7 @@ note( "Checking community functionality." );
     # community you have posting access to
     do_request( GET => $memberof_cu->atom_base . "/entries", authenticate => 1 );
     is( $r->status, $r->HTTP_OK, "Retrieved entry list" );
-    is( $r->header_in( "Content-Type" ), "application/atom+xml", "AtomAPI entry content type" );
+    is( $r->content_type, "application/atom+xml", "AtomAPI entry content type" );
 
     my $feed = XML::Atom::Feed->new( \ $r->response_content );
     my @entries = $feed->entries;

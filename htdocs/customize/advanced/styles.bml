@@ -17,8 +17,6 @@ _c?>
     use strict;
     use vars qw(%GET %POST $title $body);
 
-    LJ::set_active_crumb('yourstyles');
-
     my $remote;
 
     # authas switcher form
@@ -353,7 +351,7 @@ _c?>
     $body .= "<?h1 " . ($id ? $ML{'.styleoptions.header'} : $ML{'.createstyle.header'}) . " h1?>\n";
     $body .= "<table summary='' style='margin-bottom: 10px'>\n";
     $body .= "<tr><td>$ML{'.createstyle.label.name'} </td><td>";
-    $body .= LJ::html_text({ 'name' => 'stylename', 'size' => '30', 'maxlength' => '255', 
+    $body .= LJ::html_text({ 'name' => 'stylename', 'size' => '30', 'maxlength' => '255',
                              'value' => defined $POST{'stylename'} ? $POST{'stylename'} : $style->{'name'} });
     $body .= " " . LJ::html_submit('action:create', $ML{'.btn.create'}, { disabled => $noactions }) unless $id;
     $body .= "</td></tr>\n";
@@ -450,8 +448,8 @@ _c?>
     my $coresel = $layerselect->('core', 0);
     $body .= $coresel->[0];
     $body .= LJ::html_hidden('core_hidden', $core);
-    my $coredis = $coresel->[1]->{'disabled'} || $noactions ? { 'disabled' => 'disabled' } : undef;
-    $body .= " " . LJ::html_submit('action:change', $ML{'.btn.change'}, $coredis) . "</td></tr>\n";
+    my $c_dis = $coresel->[1]->{'disabled'} || $noactions ? { 'disabled' => 'disabled' } : undef;
+    $body .= " " . LJ::html_submit('action:change', $ML{'.btn.change'}, $c_dis) . "</td></tr>\n";
     $body .= "</table>\n";
 
     ### i18nc / layout
@@ -469,8 +467,8 @@ _c?>
     my $layoutsel = $layerselect->('layout', $core);
     $body .= $layoutsel->[0];
     $body .= $layerother->('layout');
-    my $laydis = $layoutsel->[1]->{'disabled'} || $noactions ? { 'disabled' => 'disabled' } : undef;
-    $body .= " " . LJ::html_submit("action:change", $ML{'.btn.change'}, $laydis) . " </td></tr>\n";
+    my $l_dis = $layoutsel->[1]->{'disabled'} || $noactions ? { 'disabled' => 'disabled' } : undef;
+    $body .= " " . LJ::html_submit("action:change", $ML{'.btn.change'}, $l_dis) . " </td></tr>\n";
     $body .= "</table>\n";
 
     # do we need to show the rest of the form?

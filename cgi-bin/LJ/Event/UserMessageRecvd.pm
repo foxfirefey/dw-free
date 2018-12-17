@@ -37,9 +37,8 @@ sub as_email_subject {
     my ($self, $u) = @_;
 
     my $other_u = $self->load_message->other_u;
-    my $lang    = $u->prop('browselang');
 
-    return LJ::Lang::get_text($lang, 'esn.email.pm.subject', undef,
+    return LJ::Lang::get_default_text( 'esn.email.pm.subject',
         {
             sender => $self->load_message->other_u->display_username,
         });
@@ -48,13 +47,13 @@ sub as_email_subject {
 sub _as_email {
     my ($self, $u, $is_html) = @_;
 
-    my $lang        = $u->prop('browselang');
     my $msg         = $self->load_message;
     my $replyurl    = "$LJ::SITEROOT/inbox/compose?mode=reply&msgid=" . $msg->msgid;
     my $other_u     = $msg->other_u;
     my $sender      = $other_u->user;
     my $inbox       = "$LJ::SITEROOT/inbox/";
-    $inbox = "<a href=\"$inbox\">" . LJ::Lang::get_text($lang, 'esn.your_inbox') . "</a>" if $is_html;
+    $inbox = "<a href=\"$inbox\">" . LJ::Lang::get_default_text( 'esn.your_inbox' ) . "</a>"
+        if $is_html;
 
     my $vars = {
         user            => $is_html ? ($u->ljuser_display) : ($u->user),
@@ -67,14 +66,14 @@ sub _as_email {
         inbox           => $inbox,
     };
 
-    my $body = LJ::Lang::get_text($lang, 'esn.email.pm_with_body', undef, $vars) .
-        $self->format_options($is_html, $lang, $vars,
+    my $body = LJ::Lang::get_default_text( 'esn.email.pm_with_body', $vars ) .
+        $self->format_options($is_html, undef, $vars,
         {
             'esn.reply_to_message' => [ 1, $replyurl ],
             'esn.view_profile'     => [ 2, $other_u->profile_url ],
             'esn.read_journal'     => [ $other_u->is_identity ? 0 : 3, $other_u->journal_base ],
             'esn.add_watch'        => [ $u->watches( $other_u ) ? 0 : 4,
-                                             "$LJ::SITEROOT/manage/circle/add?user=$sender&action=subscribe" ],
+                                             "$LJ::SITEROOT/circle/$sender/edit?action=subscribe" ],
         }
     );
 
@@ -110,8 +109,8 @@ sub as_html {
     my $pichtml = display_pic($msg, $other_u);
     my $subject = $msg->subject;
 
-    if ( $other_u->is_suspended ) { 
-        $subject = "(Reply from suspended user)";
+    if ( $other_u->is_suspended ) {
+        $subject = "(Message from suspended user)";
     }
 
     my $ret;
@@ -135,7 +134,7 @@ sub as_html_actions {
     my $ret = "<div class='actions'>";
     if (! $other_u->is_suspended ) {
         $ret .= " <a href='$LJ::SITEROOT/inbox/compose?mode=reply&msgid=$msgid'>Reply</a>";
-        $ret .= " | <a href='$LJ::SITEROOT/manage/circle/add?user=". $msg->other_u->user ."&action=subscribe'>Subscribe to ". $msg->other_u->user ."</a>"
+        $ret .= " | <a href='$LJ::SITEROOT/circle/". $msg->other_u->user ."/edit?action=subscribe'>Subscribe to ". $msg->other_u->user ."</a>"
             unless $u->watches( $msg->other_u );
         $ret .= " | <a href='$LJ::SITEROOT/inbox/markspam?msgid=". $msg->msgid ."'>Mark as Spam</a>"
             unless LJ::sysban_check( 'spamreport', $u->user );
@@ -175,7 +174,7 @@ sub content {
     my $other_u = $msg->other_u;
 
     if ( $other_u->is_suspended ) {
-        $body = "(Reply from suspended user)";
+        $body = "(Message from suspended user)";
     }
     $body = LJ::html_newlines($body);
     $body = "<div class='actions_top'>" . $self->as_html_actions . "</div>" . $body
@@ -195,34 +194,14 @@ sub content_summary {
     return $ret;
 }
 
-# override parent class sbuscriptions method to always return
+# override parent class subscriptions method to always return
 # a subscription object for the user
 sub raw_subscriptions {
-    my ($class, $self, %args) = @_;
-    my $cid   = delete $args{'cluster'};
-    croak("Cluser id (cluster) must be provided") unless defined $cid;
+    my ( $class, $self, %args ) = @_;
 
-    my $scratch = delete $args{'scratch'}; # optional
+    $args{ntypeid} = LJ::NotificationMethod::Inbox->ntypeid; # Inbox
 
-    croak("Unknown options: " . join(', ', keys %args)) if %args;
-    croak("Can't call in web context") if LJ::is_web_context();
-
-    my @subs;
-    my $u = $self->u;
-    return unless ( $cid == $u->clusterid );
-
-    my $row = { userid  => $self->u->{userid},
-                ntypeid => LJ::NotificationMethod::Inbox->ntypeid, # Inbox
-                etypeid => $class->etypeid,
-              };
-
-    push @subs, LJ::Subscription->new_from_row($row);
-
-    push @subs, eval { LJ::Event::raw_subscriptions($class, $self,
-        cluster => $cid, scratch => $scratch ) };
-
-
-    return @subs;
+    return $class->_raw_always_subscribed( $self, %args );
 }
 
 sub get_subscriptions {

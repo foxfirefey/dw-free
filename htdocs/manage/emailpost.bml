@@ -44,8 +44,6 @@ body<=
     use strict;
     use vars qw(%POST %GET);
 
-    LJ::set_active_crumb('mobilepost');
-
     return $ML{'.error.sitenotconfigured'} unless $LJ::EMAIL_POST_DOMAIN;
 
     my $u = LJ::get_remote();
@@ -378,7 +376,7 @@ body<=
     $res = LJ::Protocol::do_request(
         "login",
         {
-            "ver" => ( $LJ::UNICODE ? "1" : "0" ),
+            "ver" => $LJ::PROTOCOL_VER,
             "username"     => $u->{'user'},
 #            "friendgroups" => 1,
             "getpickws"    => 1,

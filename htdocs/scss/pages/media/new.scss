@@ -1,4 +1,4 @@
-@import "foundation/settings", "foundation/components/global", "foundation/components/forms";
+@import "foundation/base", "foundation/components/forms";
 
 .preview {
   max-height: 75px;
@@ -40,7 +40,7 @@
   margin-bottom: 1em;
 }
 
-@media #{$small} {
+@media #{$large} {
   .drop_zone {
     font-size: 6em;
   }

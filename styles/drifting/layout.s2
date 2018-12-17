@@ -29,6 +29,8 @@ propgroup presentation
     property use use_journalstyle_entry_page;
     property use margins_size;
     property use margins_unit;
+    property use medium_breakpoint_width;
+    property use large_breakpoint_width;
     property use reverse_sortorder_group;
     property use reg_firstdayofweek;
     property use icons_page_sort;
@@ -287,6 +289,9 @@ propgroup customcss
 ################################################################################
 function Page::print_default_stylesheet()
 {
+    var string medium_media_query = generate_medium_media_query();
+    var string large_media_query = generate_large_media_query();
+
     var string image_header_left_url = generate_image_url ($*image_header_left);
     var string image_header_right_url = generate_image_url ($*image_header_right);
     var string page_background = generate_background_css ($*image_background_page_url, $*image_background_page_repeat, $*image_background_page_position, $*color_page_background);
@@ -372,28 +377,39 @@ function Page::print_default_stylesheet()
         $canvas_colors
     }
 
-    #primary {
-        margin: 10px 0 0 235px;
-        border-left: 1px solid $*color_page_border;
-    }
-
     #secondary {
-        float: left;
-        width: 225px;
         margin: 0px 0px 0px 0px;
-        border-right: 1px solid $*color_module_border;
         text-align: left;
     }
 
-    #secondary .module-wrapper .separator-after {
-        float: left;
-        clear: left;
-        width: 224px;
-        height: 1.5em;
-        margin-top: .5em;
-        $module_footer_colors
-    }
+    /* reorder so that #primary appears on top of #secondary on mobile views */
+    #canvas { display: table; }
+    #header { display: table-header-group; }
+    #secondary { display: table-footer-group; }
+    #primary { display: table-row-group; }
 
+    @media $medium_media_query {
+        #canvas, #header, #secondary, #primary { display: block; }
+        #primary {
+            margin: 10px 0 0 235px;
+            border-left: 1px solid $*color_page_border;
+        }
+
+        #secondary {
+            float: left;
+            width: 225px;
+            border-right: 1px solid $*color_module_border;
+        }
+
+        #secondary .module-wrapper .separator-after {
+            float: left;
+            clear: left;
+            width: 224px;
+            height: 1.5em;
+            margin-top: .5em;
+            $module_footer_colors
+        }
+    }
     /* Lists
     ***************************************************************************/
 
@@ -431,7 +447,6 @@ function Page::print_default_stylesheet()
     .day-title,
     .month-title {
         border: 1px solid $*color_module_border;
-        border-left: none;
         background: $*color_page_background;
         padding: 3px;
         padding-left: 10px;
@@ -445,42 +460,69 @@ function Page::print_default_stylesheet()
     /* Header
     ***************************************************************************/
     #header {
-        height: 4.7em;
         margin-bottom: 10px;
         border: 1px solid $*color_module_border;
         $header_background
     }
 
-    .header-left {
-        background-image: url($image_header_left_url);
-        background-repeat: no-repeat;
-        height: 4.7em;
-        float: left;
-        width: 60%;
+    #header:after {
+      content: "";
+      display: table;
+      clear: both;
     }
 
-    .header-right {
-        background-image: url($image_header_right_url);
-        height: 4.7em;
-        float: right;
-        width: 250px;
+    .header-left {
+        background-image: url($image_header_left_url);
+        background-position: 0 100%;
+        background-repeat: no-repeat;
+        min-height: 4.7em;
+    }
+
+    #header h1#title, #header h1#title a {
+        color: $*color_page_title;
+        text-decoration: none;
     }
 
     #header h1#title {
         $page_title_font
         font-weight: bold;
         font-style: italic;
-        color: $*color_page_title;
         line-height: 0.9em;
-        margin: 0px 0px 0px 235px;
         width: 100%;
+        margin: 0;
+        text-align: center;
     }
 
     #header h2#subtitle {
         $page_subtitle_font
-        margin: 5px 0px 0px 335px;
         color: $*color_page_subtitle;
         width: 100%;
+    }
+
+    @media $medium_media_query {
+        #header h1#title {
+            margin: 0px 0px 0px 235px;
+            text-align: left;
+        }
+
+        #header h2#subtitle {
+            margin: 5px 0px 0px 335px;
+        }
+
+        .header-left {
+            float: left;
+            width: 60%;
+        }
+    }
+
+    @media $large_media_query {
+        .header-right {
+            background-image: url($image_header_right_url);
+            background-position: 0 100%;
+            height: 4.7em;
+            float: right;
+            width: 250px;
+        }
     }
 
     /* Navigation
@@ -489,7 +531,6 @@ function Page::print_default_stylesheet()
         padding: 3px 15px 3px 10px;
         margin-bottom: 15px;
         $navigation_colors
-        border-left: none;
         clear: right;
         text-align: right;
     }
@@ -628,6 +669,20 @@ function Page::print_default_stylesheet()
     /* Search Module
     ***************************************************************************/
     .search-box { max-width: 100%; }
+	
+	.search-form .search-box-item, 
+    .search-form .search-button-item {
+        display: block
+    }
+    .search-form .comment_search_checkbox_item {
+        display: inline
+    }
+	
+	#footer .module-search .search-form .search-box-item,
+    #footer .module-search .search-form .comment_search_label,
+    #footer .module-search .search-form .search-button-item {
+        display: inline;
+    }
 
     /* Tag Module
     ***************************************************************************/
@@ -643,7 +698,6 @@ function Page::print_default_stylesheet()
     ***************************************************************************/
     #reply h2 {
         border: 1px solid $*color_entry_border;
-        border-left: none;
         background: $*color_page_background;
         padding: 3px;
         padding-left: 10px;
@@ -668,6 +722,15 @@ function Page::print_default_stylesheet()
         color: $*color_entry_text;
     }
 
+    /* ensure comment content stretches out horizontally so it's readable */
+    .comment-content:before {
+        content: "";
+        display: block;
+        overflow: hidden;
+        width: 10em;
+    }
+    .comment-content { border-top: 1px transparent solid; } /* for firefox */
+
     /* To prevent overlapping when icon's on the left */
     /* and list is the first thing in content */
     .entry-content li,
@@ -675,10 +738,19 @@ function Page::print_default_stylesheet()
         list-style-position: inside;
         }
 
+    /* To constrain the width and prevent layout breaking */
+    .entry-content img, .comment-content img {
+        max-width: 100%;
+        height: auto;
+    }
+
+    @media $large_media_query {
+        .entry-content img, .comment-content img { max-width: none; }
+    }
+
     .entry .subject {
         padding: 3px;
         border: 1px solid $*color_entry_border;
-        border-left: none;
         $module_header_background
         font-size: 1.2em;
         font-weight: bold;
@@ -802,7 +874,6 @@ function Page::print_default_stylesheet()
 
     .comment .subject {
         border: 1px solid $*color_entry_border;
-        border-left: none;
         background: $*color_page_background;
         padding: 3px;
         padding-left: 10px;
@@ -946,7 +1017,6 @@ function Page::print_default_stylesheet()
         background: $*color_page_background;
         color: $*color_page_text;
         border: 1px solid $*color_entry_border;
-        border-left: none;
         padding: 3px;
         padding-left: 10px;
     }
@@ -968,7 +1038,6 @@ function Page::print_default_stylesheet()
         background: $*color_page_background;
         color: $*color_page_text;
         border: 1px solid $*color_entry_border;
-        border-left: none;
         padding: 3px;
         padding-left: 10px;
     }
@@ -1021,10 +1090,7 @@ function Page::print_default_stylesheet()
     #footer {
         font-size: .8em;
         font-weight: normal;
-        border-right: 1px solid $*color_module_border;
-        border-top: 1px solid $*color_module_border;
-        border-bottom: 1px solid $*color_module_border;
-        border-left: 0px;
+        border: 1px solid $*color_module_border;
         background: $*color_page_background;
         padding: 3px;
         padding-left: 10px;
@@ -1036,6 +1102,17 @@ function Page::print_default_stylesheet()
         font-size: .8em;
         padding-top: 10px;
         text-align: center;
+    }
+
+    /* (left border)
+    ***************************************************************************/
+    @media $medium_media_query {
+        .day-title, .month-title,
+        #footer, .navigation, #reply h2,
+        .entry .subject, .comment .subject,
+        .tags-container h2, .icons-container h2 {
+            border-left: none;
+        }
     }
 
 $userpic_css
@@ -1063,9 +1140,10 @@ function print_module_navlinks()
 ################################################################################
 function Page::print()
 {
-    """<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-    <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    """<!DOCTYPE html>
+    <html lang="en">
     <head>""";
+        $this->print_meta_tags();
         $this->print_head();
         $this->print_stylesheets();
         $this->print_head_title();
@@ -1129,11 +1207,14 @@ function Page::print_entry (Entry e)
         $e->print_text();
         if ($*entry_metadata_position == "bottom") { $e->print_metadata(); }
         $e->print_tags();
-        $e->print_management_links();
-        $e->print_interaction_links("topcomment");
-        $this->print_reply_container({ "target" => "topcomment" });
-
+        $this->print_entry_footer($e);
     $e->print_wrapper_end();
+}
+
+function Page::print_entry_footer(Entry e) {
+    $e->print_management_links();
+    $e->print_interaction_links();
+    $e->print_reply_container({ "target" => $e.dom_id + "-reply" });
 }
 
 ## Entry Page
@@ -1180,6 +1261,12 @@ function EntryPage::print_comment (Comment c)
         println "</div>";
 
     $c->print_wrapper_end();
+}
+
+function EntryPage::print_entry_footer(Entry e) {
+    $e->print_management_links();
+    $e->print_interaction_links("topcomment");
+    $this->print_reply_container({ "target" => "topcomment" });
 }
 
 ## Reply Page

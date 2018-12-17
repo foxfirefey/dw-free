@@ -22,14 +22,6 @@ userproplist.ao3:
   multihomed: 0
   prettyname: Archive of Our Own user account name
 
-userproplist.aolim:
-  cldversion: 0
-  datatype: char
-  des: AOL IM ScreenName
-  indexed: 1
-  multihomed: 1
-  prettyname: AOL Instant Messanger
-
 userproplist.badpassword:
   cldversion: 4
   datatype: num
@@ -53,14 +45,6 @@ userproplist.bonus_icons:
   indexed: 0
   multihomed: 0
   prettyname: How many bonus icon slots the user has purchased
-
-userproplist.browselang:
-  cldversion: 4
-  datatype: char
-  des: LJ lang code in ml_langs
-  indexed: 1
-  multihomed: 0
-  prettyname: Language to browse with
 
 userproplist.captcha:
   cldversion: 4
@@ -93,6 +77,14 @@ userproplist.optout_community_promo:
   indexed: 0
   multihomed: 0
   prettyname: Account creation community promo
+
+userproplist.comm_postlevel_new:
+  cldversion: 4
+  datatype: bool
+  des: Whether new members can post to the community or not
+  indexed: 0
+  multihomed: 0
+  prettyname: Post Level for New Members
 
 userproplist.comm_promo_blurb:
   cldversion: 4
@@ -198,6 +190,14 @@ userproplist.delicious:
   multihomed: 0
   prettyname: Delicious user account name
 
+userproplist.deviantart:
+  cldversion: 4
+  datatype: char
+  des: DeviantArt user account name
+  indexed: 0
+  multihomed: 0
+  prettyname: DeviantArt user account name
+
 userproplist.disable_auto_formatting:
   cldversion: 4
   datatype: bool
@@ -214,6 +214,14 @@ userproplist.disable_comm_promo:
   multihomed: 0
   prettyname: Administratively disable community promo features for a user
 
+userproplist.displaydate_check:
+  cldversion: 4
+  datatype: bool
+  des: Use time of posting by default for this user.
+  indexed: 0
+  multihomed: 0
+  prettyname: Automatically sets entry page to use time of posting for timestamp.
+
 userproplist.dismissed_page_notices:
   cldversion: 4
   datatype: char
@@ -221,14 +229,6 @@ userproplist.dismissed_page_notices:
   indexed: 0
   multihomed: 0
   prettyname: Dismissed Page Notices
-
-userproplist.dogeartime:
-  cldversion: 4
-  datatype: num
-  des: unixtime of most recently read friends item.  anything greater is new.
-  indexed: 0
-  multihomed: 0
-  prettyname: dog ear time
 
 userproplist.dont_load_members:
   cldversion: 4
@@ -382,14 +382,6 @@ userproplist.exclude_from_own_stats:
   multihomed: 0
   prettyname: Exclude from self journal stats
 
-userproplist.external_foaf_url:
-  cldversion: 4
-  datatype: char
-  des: Location of External FOAF file
-  indexed: 0
-  multihomed: 0
-  prettyname: FOAF address
-
 userproplist.ffnet:
   cldversion: 4
   datatype: char
@@ -421,6 +413,14 @@ userproplist.gender:
   indexed: 1
   multihomed: 0
   prettyname: Gender
+
+userproplist.github:
+  cldversion: 4
+  datatype: char
+  des: GitHub user account name
+  indexed: 0
+  multihomed: 0
+  prettyname: GitHub user account name
 
 userproplist.google_talk:
   cldversion: 0
@@ -486,14 +486,6 @@ userproplist.icq:
   multihomed: 1
   prettyname: ICQ
 
-userproplist.identity_posting:
-  cldversion: 4
-  datatype: bool
-  des: Whether to allow identity users to post entries to this journal
-  indexed: 0
-  multihomed: 0
-  prettyname: Entries from Identity Users
-
 userproplist.import_job:
   cldversion: 4
   datatype: char
@@ -526,6 +518,14 @@ userproplist.interest_ids_blob:
   multihomed: 0
   prettyname: Interest IDs blob
 
+userproplist.instagram:
+  cldversion: 4
+  datatype: char
+  des: Instagram account name for user profile
+  indexed: 0
+  multihomed: 0
+  prettyname: Instagram Account
+
 userproplist.jabber:
   cldversion: 0
   datatype: char
@@ -533,14 +533,6 @@ userproplist.jabber:
   indexed: 1
   multihomed: 1
   prettyname: Jabber Address
-
-userproplist.journaldomain:
-  cldversion: 4
-  datatype: char
-  des: Domain which will load user's journal
-  indexed: 0
-  multihomed: 0
-  prettyname: Domain Alias
 
 userproplist.journalsubtitle:
   cldversion: 4
@@ -590,6 +582,14 @@ userproplist.last_fm_user:
   multihomed: 0
   prettyname: LastFM user account name
 
+userproplist.livejournal:
+  cldversion: 4
+  datatype: char
+  des: LiveJournal user account name
+  indexed: 0
+  multihomed: 0
+  prettyname: LiveJournal user account name
+
 userproplist.latest_optout:
   cldversion: 4
   datatype: bool
@@ -598,14 +598,6 @@ userproplist.latest_optout:
   multihomed: 0
   prettyname: Latest Updates Opt Out
 
-userproplist.mailencoding:
-  cldversion: 4
-  datatype: num
-  des: Encoding in which to mail comments to the user. Defaults to UTF-8.
-  indexed: 0
-  multihomed: 0
-  prettyname: Mail Encoding
-
 userproplist.moderated:
   cldversion: 4
   datatype: bool
@@ -613,14 +605,6 @@ userproplist.moderated:
   indexed: 0
   multihomed: 0
   prettyname: Moderation status
-
-userproplist.msn:
-  cldversion: 0
-  datatype: char
-  des: MSN Username
-  indexed: 1
-  multihomed: 1
-  prettyname: MSN Username
 
 userproplist.newesteventtime:
   cldversion: 4
@@ -745,18 +729,10 @@ userproplist.opt_echi_display:
 userproplist.opt_embedplaceholders:
   cldversion: 4
   datatype: char
-  des: Y/N choice regarding whether lj-template tag embedded object should be hidden behind a placeholder.
+  des: Y/N choice regarding whether site-embed content should be hidden behind a placeholder.
   indexed: 0
   multihomed: 0
-  prettyname: Use Placeholders for lj-template embedded objects
-
-userproplist.opt_exclude_stats:
-  cldversion: 4
-  datatype: bool
-  des: 1: don't include user when using offsite hit tracker
-  indexed: 0
-  multihomed: 0
-  prettyname: Exclude From Offsite Stats Tracking
+  prettyname: Use Placeholders for site-embed content
 
 userproplist.opt_findbyemail:
   cldversion: 4
@@ -870,14 +846,6 @@ userproplist.opt_nctalklinks:
   multihomed: 0
   prettyname: Show number of comments in URL
 
-userproplist.opt_nomodemail:
-  cldversion: 4
-  datatype: bool
-  des: 1: do not send moderation emails, 0: default, send them
-  indexed: 0
-  multihomed: 0
-  prettyname: No Moderation Email
-
 userproplist.opt_notalkicons:
   cldversion: 4
   datatype: bool
@@ -910,6 +878,14 @@ userproplist.opt_randompaidgifts:
   multihomed: 0
   prettyname: Random Paid Gifts
 
+userproplist.opt_rpacct:
+  cldversion: 4
+  datatype: bool
+  des: Roleplaying account self-identification flag
+  indexed: 0
+  multihomed: 0
+  prettyname: RP flag
+
 userproplist.opt_sharebday:
   cldversion: 4
   datatype: char
@@ -918,6 +894,54 @@ userproplist.opt_sharebday:
   multihomed: 0
   prettyname: Share Birthday
 
+userproplist.opt_shortcuts:
+  cldversion: 4
+  datatype: bool
+  des: Enable keyboard shortcuts
+  indexed: 0
+  multihomed: 0
+  prettyname: Keyboard Shortcuts
+
+userproplist.opt_shortcuts_next:
+  cldversion: 4
+  datatype: char
+  des: Keyboard shortcut for next entry
+  indexed: 0
+  multihomed: 0
+  prettyname: Keyboard Shortcut Next
+
+userproplist.opt_shortcuts_prev:
+  cldversion: 4
+  datatype: char
+  des: Keyboard shortcut for previous entry
+  indexed: 0
+  multihomed: 0
+  prettyname: Keyboard Shortcut Previous
+
+userproplist.opt_shortcuts_touch:
+  cldversion: 4
+  datatype: bool
+  des: Enable touch shortcuts
+  indexed: 0
+  multihomed: 0
+  prettyname: Touch Shortcuts
+
+userproplist.opt_shortcuts_touch_next:
+  cldversion: 4
+  datatype: char
+  des: Touch shortcut for next entry
+  indexed: 0
+  multihomed: 0
+  prettyname: Touch Shortcut Next
+
+userproplist.opt_shortcuts_touch_prev:
+  cldversion: 4
+  datatype: char
+  des: Touch shortcut for previous entry
+  indexed: 0
+  multihomed: 0
+  prettyname: Touch Shortcut Previous
+
 userproplist.opt_showbday:
   cldversion: 4
   datatype: char
@@ -925,14 +949,6 @@ userproplist.opt_showbday:
   indexed: 0
   multihomed: 0
   prettyname: Show Birthday
-
-userproplist.opt_showljtalk:
-  cldversion: 4
-  datatype: char
-  des: User selected setting for showing (Y) or hiding (N) the LJ Talk field on their profile
-  indexed: 0
-  multihomed: 0
-  prettyname: Show LJ Talk field?
 
 userproplist.opt_showlocation:
   cldversion: 4
@@ -949,14 +965,6 @@ userproplist.opt_showmutualfriends:
   indexed: 1
   multihomed: 0
   prettyname: Mutual Friends Display
-
-userproplist.opt_showonlinestatus:
-  cldversion: 0
-  datatype: char
-  des: Show online status to Everyone(Y), Mutual Friends(F) or Nobody(N).
-  indexed: 0
-  multihomed: 0
-  prettyname: Show online status
 
 userproplist.opt_stylemine:
   cldversion: 4
@@ -1061,6 +1069,14 @@ userproplist.pinboard:
   indexed: 0
   multihomed: 0
   prettyname: Pinboard user account name
+
+userproplist.pinterest:
+  cldversion: 4
+  datatype: char
+  des: Pinterest user account name
+  indexed: 0
+  multihomed: 0
+  prettyname: Pinterest user account name
 
 userproplist.plurk:
   cldversion: 4
@@ -1237,6 +1253,14 @@ userproplist.stylesys:
   indexed: 0
   multihomed: 0
   prettyname: Style System to use
+
+userproplist.suspendmsg:
+  cldversion: 4
+  datatype: char
+  des: Internal notes, not shown to user
+  indexed: 0
+  multihomed: 0
+  prettyname: Sets message to be shown when running suspend command against this account
 
 userproplist.timeformat_24:
   cldversion: 4
@@ -1506,7 +1530,7 @@ logproplist.interface:
 logproplist.opt_backdated:
   datatype: bool
   des: Set to true if this item shouldn't show up on people's friends lists (because it occurred in the past)
-  prettyname: Back-dated
+  prettyname: Don't Show on Reading Pages
   sortorder: 35
   ownership: user
 
@@ -1645,12 +1669,6 @@ logproplist.xpostdetail:
 
 usermsgproplist.userpic:
   des: Userpic chosen by the user who created the message
-
-pollproplist2.unique:
-  des: If set to 1, then a person with a given email address can only vote once in the poll
-
-pollproplist2.createdate:
-  des: The voter must have created their account by the date specified (Pacific time) in order to vote.  Must be in format YYYY-MM-DD, otherwise there will be no restriction.
 
 media_prop_list.title:
   des: Title of this object

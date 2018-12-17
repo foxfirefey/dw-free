@@ -16,10 +16,8 @@
 #
 
 use strict;
-use lib "$ENV{LJHOME}/extlib/lib/perl5";
-use lib "$ENV{LJHOME}/cgi-bin";
 BEGIN {
-    require "ljlib.pl";
+    require "$ENV{LJHOME}/cgi-bin/ljlib.pl";
 }
 
 use Gearman::Worker;
@@ -35,6 +33,8 @@ sub _run_search {
 
     my $index = '*';
     $sx->SetServer( @LJ::SPHINX_SEARCHD );
+
+    $sx->SetEncoders( sub { shift }, sub { shift } );
 
     $sx->SetMatchMode( SPH_MATCH_ALL )
        ->SetSortMode( SPH_SORT_RELEVANCE )

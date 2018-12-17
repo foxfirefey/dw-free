@@ -49,7 +49,9 @@ ContextualPopup.setup = function () {
     // attach to all userpics
     if (Site.ctx_popup_icons) {
         var images = document.getElementsByTagName("img") || [];
-        var re = new RegExp( "^" + Site.iconprefix + "/\\d+\/\\d+$" );
+        var old_icon_url = 'www\\.dreamwidth\\.org/userpic';
+        var url_prefix = "(^" + Site.iconprefix + "|" + old_icon_url + ")";
+        var re = new RegExp( url_prefix + "/\\d+\/\\d+$" );
         Array.prototype.forEach.call(images, function (image) {
             // if the image url matches a regex for userpic urls then attach to it
             if (image.src.match(re)) {
@@ -331,14 +333,20 @@ ContextualPopup.renderPopup = function (ctxPopupId) {
             if (!data.is_closed_membership || data.is_member) {
                 var membershipLink  = document.createElement("a");
 
-                var membership_action = data.is_member ? "leave" : "join";
+                var membership_action;
 
                 if (data.is_member) {
                     membershipLink.href = data.url_leavecomm;
                     membershipLink.innerHTML = "Leave";
+                    membership_action = "leave";
+                } else if (data.is_invited) {
+                    membershipLink.href = data.url_acceptinvite;
+                    membershipLink.innerHTML = "Accept invitation";
+                    membership_action = "accept";
                 } else {
                     membershipLink.href = data.url_joincomm;
                     membershipLink.innerHTML = "Join community";
+                    membership_action = "join";
                 }
 
                 if (!ContextualPopup.disableAJAX) {
@@ -497,7 +505,7 @@ ContextualPopup.renderPopup = function (ctxPopupId) {
         // ban / unban
 
         var ban;
-        if (data.is_logged_in && ! data.is_requester && ! data.is_syndicated) {
+        if (data.is_logged_in && ! data.is_requester && ! data.is_syndicated && ! data.is_comm ) {
             ban = document.createElement("span");
 
             if(!data.is_banned) {
@@ -604,7 +612,7 @@ ContextualPopup.changeRelation = function (info, ctxPopupId, action, evt) {
     if (!info) return true;
 
     if ( action == "setBan" || action == "setUnban" ) {
-       var username = info.username;
+       var username = info.display_name;
        var message = action == "setUnban" ? "Are you sure you wish to unban " + username + "?"
                                           : "Are you sure you wish to ban " + username + "?";
        if ( ! confirm( message ) )
@@ -627,7 +635,7 @@ ContextualPopup.changeRelation = function (info, ctxPopupId, action, evt) {
     // callback from changing relation request
     var changedRelation = function (data) {
         if ( action == "setBan" || action == "setUnban" ) {
-           var username = info.username;
+           var username = info.display_name;
            var message = action == "setUnban" ? "Are you sure you wish to unban " + username + "?"
                                               : "Are you sure you wish to ban " + username + "?";
            if ( confirm( message ) ) {
@@ -788,4 +796,3 @@ ContextualPopup.gotError = function (err) {
 
 // when page loads, set up contextual popups
 LiveJournal.register_hook("page_load", ContextualPopup.setup);
-

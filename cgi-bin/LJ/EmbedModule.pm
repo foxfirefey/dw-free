@@ -105,7 +105,7 @@ sub save_module {
 sub transform_rte_post {
     my ($class, $txt) = @_;
     return $txt unless $txt && $txt =~ /ljembed/i;
-    # ghetto... shouldn't use regexes to parse this
+    # FIXME: shouldn't use regexes to parse this
     $txt =~ s/<div\s*class="ljembed"\s*(embedid="(\d+)")?\s*>(((?!<\/div>).)*)<\/div>/<site-embed id="$2">$3<\/site-embed>/ig;
     $txt =~ s/<div\s*(embedid="(\d+)")?\s*class="ljembed"\s*>(((?!<\/div>).)*)<\/div>/<site-embed id="$2">$3<\/site-embed>/ig;
     return $txt;
@@ -324,10 +324,10 @@ sub extract_src_info {
         $sclient->insert($job)
                 or croak "Can't queue youtube api job: $@";
 
-    } elsif ( $contents =~ /src="http:\/\/.*vimeo\.com/ ) {
+    } elsif ( $contents =~ /src="https?:\/\/.*vimeo\.com/ ) {
         # Vimeo's default c/p embed code contains a link to the
         # video by title. If that's present, don't build a link.
-        my $host = "http://vimeo.com/";
+        my $host = "https://vimeo.com/";
 
         # get the video ID
         $contents =~ /.*src="[^"]*vimeo\.com\/video\/([^"]*)".*/;
@@ -413,7 +413,7 @@ sub contact_external_sites {
 
         # put together the  GET request to get the video title
         my $ua = LJ::get_useragent( role => 'vimeo', timeout => 60 );
-        my $api_url = "http://vimeo.com/api/v2/video/"
+        my $api_url = "https://vimeo.com/api/v2/video/"
                     . $vid_id
                     . ".json";
 
@@ -519,24 +519,9 @@ sub module_iframe_tag {
                     my $src;
                     next unless $src = $attr->{src};
 
-                    # we have an object/embed tag with src, make a fake lj-template object
-                    my @tags = (
-                                ['S', 'lj-template', {
-                                    name => 'video',
-                                    (defined $elewidth     ? ( width  => $width  ) : ()),
-                                    (defined $eleheight    ? ( height => $height ) : ()),
-                                    (defined $flashvars ? ( flashvars => $flashvars ) : ()),
-                                }],
-                                [ 'T', $src, {}],
-                                ['E', 'lj-template', {}],
-                                );
+                    # RIP lj-template (#1869)
+                    $no_whitelist = 1;
 
-                    $embedcodes = LJ::Hooks::run_hook('expand_template_video', \@tags);
-
-                    $found_embed = 1 if $embedcodes;
-                    $found_embed &&= $embedcodes !~ /Invalid video/i;
-
-                    $no_whitelist = !$found_embed;
                 } elsif ($tag ne 'param') {
                     $no_whitelist = 1;
                 }
@@ -567,6 +552,23 @@ sub module_iframe_tag {
         $height = MAX_HEIGHT if $height > MAX_HEIGHT;
     }
 
+    my $wrapper_style = "max-width: $width" . ($width_unit || "px") . "; max-height: " . MAX_HEIGHT . "px;";
+
+    # this is the ratio between
+    my $padding_based_on_aspect_ratio;
+    if ( $height_unit eq $width_unit ) {
+        $padding_based_on_aspect_ratio = $height / $width * 100;
+        $padding_based_on_aspect_ratio .= "%";
+    } else {
+        if ( $height_unit eq "%" ) {
+            $padding_based_on_aspect_ratio = $height / 100 * $width;
+        } else {
+            $padding_based_on_aspect_ratio = $width / 100 * $height;
+        }
+        $padding_based_on_aspect_ratio .= "px";
+    }
+    my $ratio_style = "padding-top: $padding_based_on_aspect_ratio";
+
     # safari caches state of sub-resources aggressively, so give
     # each iframe a unique 'name' and 'id' attribute
     # append a random string to the name so it can't be targetted by links
@@ -575,9 +577,10 @@ sub module_iframe_tag {
     my $direct_link = defined $url
                     ? '<div><a href="' . $url . '">' .  $linktext . '</a></div>' : '';
     my $auth_token = LJ::eurl(LJ::Auth->sessionless_auth_token('embedcontent', moduleid => $moduleid, journalid => $journalid, preview => $preview,));
-    my $iframe_link = qq{http://$LJ::EMBED_MODULE_DOMAIN/?journalid=$journalid&moduleid=$moduleid&preview=$preview&auth_token=$auth_token};
-    my $iframe_tag = qq {<iframe src="$iframe_link" }
-        . qq{width="$width$width_unit" height="$height$height_unit" allowtransparency="true" frameborder="0" class="lj_embedcontent" id="$id" name="$name"></iframe>}
+    my $iframe_link = qq{//$LJ::EMBED_MODULE_DOMAIN/?journalid=$journalid&moduleid=$moduleid&preview=$preview&auth_token=$auth_token};
+    my $iframe_tag = qq {<div class="lj_embedcontent-wrapper" style="$wrapper_style"><div class="lj_embedcontent-ratio" style="$ratio_style"><iframe src="$iframe_link"}
+        . qq{ width="$width$width_unit" height="$height$height_unit" allowtransparency="true" frameborder="0"}
+        . qq{ class="lj_embedcontent" id="$id" name="$name"></iframe></div></div>}
         . qq{$direct_link};
 
     my $remote = LJ::get_remote();
@@ -624,8 +627,12 @@ sub module_content {
     my $journalid = $opts{journalid}+0
         or croak "No journalid";
     my $journal = LJ::load_userid($journalid) or die "Invalid userid $journalid";
-    return '' if ($journal->is_expunged);
+    return { content => '' } if $journal->is_expunged;
+
     my $preview = $opts{preview};
+
+    # are we displaying the content? (as opposed to processing the text for other reasons)
+    my $display = $opts{display_as_content};
 
     # try memcache
     my $memkey = $class->memkey($journalid, $moduleid, $preview);
@@ -650,7 +657,7 @@ sub module_content {
     LJ::text_uncompress(\$content) if $content =~ s/^C-//;
 
     # clean js out of content
-    LJ::CleanHTML::clean_embed( \$content );
+    LJ::CleanHTML::clean_embed( \$content, { display_as_content => $display });
 
     my $return_content;
 

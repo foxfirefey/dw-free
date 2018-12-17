@@ -17,6 +17,7 @@ use strict;
 use base qw(LJ::Widget);
 use Carp qw(croak);
 use DateTime::TimeZone;
+use DW::Countries;
 
 my @location_props = qw/ country state city sidx_loc /;
 
@@ -59,7 +60,7 @@ sub render_body {
     my $state_options = $regions_cfg ? $class->region_options($regions_cfg) : undef;
 
 
-    my $state_inline_desc = $class->ml('widget.location.fn.state.inline');
+    my $state_inline_desc = $class->ml('widget.location.fn.state.inline2');
     my $city_inline_desc = $class->ml('widget.location.fn.city.inline');
 
     my $ret;
@@ -196,9 +197,9 @@ sub handle_post {
     my $u = $class->get_effective_remote;
     # load country codes
     my %countries;
-    LJ::load_codes({ "country" => \%countries});
+    DW::Countries->load( \%countries );
 
-    my $state_inline_desc = $class->ml('widget.location.fn.state.inline');
+    my $state_inline_desc = $class->ml('widget.location.fn.state.inline2');
     my $state_from_dropdown = $class->ml('states.head.defined');
     my $city_inline_desc = $class->ml('widget.location.fn.city.inline');
 
@@ -263,7 +264,10 @@ sub country_options {
 
     my %countries;
     # load country codes
-    LJ::load_codes({ "country" => \%countries});
+    DW::Countries->load( \%countries );
+    delete $countries{UK}; # we need to include UK in the hash for legacy reasons -- some users still have
+                           # their country set as UK -- but UK is mapped to GB, so there's no need to confuse
+                           # users by offering them expansions of both "UK" and "GB" in the drop-down.
 
     my $options = ['' => $class->ml('widget.location.country.choose'), 'US' => 'United States',
                    map { $_, $countries{$_} } sort { $countries{$a} cmp $countries{$b} } keys %countries];
@@ -278,7 +282,9 @@ sub region_options {
     LJ::load_codes ({$country_region_cfg->{'type'} => \%states});
 
     my $options = ['' => $class->ml('states.head.defined'),
-                   map { $_ , $states{$_} } sort keys %states];
+                   map { $_, $states{$_} }
+                        sort { $states{$a} cmp $states{$b} }
+                        keys %states ];
     return $options;
 }
 

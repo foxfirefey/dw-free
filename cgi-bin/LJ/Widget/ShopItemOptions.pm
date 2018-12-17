@@ -101,6 +101,9 @@ sub handle_post {
         return ( error => $class->ml( 'widget.shopitemoptions.error.invalidusername' ) )
             unless LJ::isu( $target_u );
 
+        return ( error => $class->ml( 'widget.shopitemoptions.error.expungedusername' ) )
+            if $target_u->is_expunged;
+
         return ( error => $class->ml( 'widget.shopitemoptions.error.banned' ) )
             if $remote && $target_u->has_banned( $remote );
 
@@ -127,7 +130,7 @@ sub handle_post {
 
     } elsif ( $post->{for} eq 'new' ) {
         my @email_errors;
-        LJ::check_email( $post->{email}, \@email_errors );
+        LJ::check_email( $post->{email}, \@email_errors, $post, $opts{email_checkbox} );
         if ( @email_errors ) {
             return ( error => join( ', ', @email_errors ) );
         } else {
@@ -155,7 +158,7 @@ sub handle_post {
     # conflict or something
     if ( $post->{accttype} ) {
         my ( $rv, $err ) = $cart->add_item(
-            DW::Shop::Item::Account->new( type => $post->{accttype}, user_confirmed => $post->{alreadyposted}, %item_data )
+            DW::Shop::Item::Account->new( type => $post->{accttype}, user_confirmed => $post->{alreadyposted}, force_spelling => $post->{force_spelling}, %item_data )
         );
         return ( error => $err ) unless $rv;
     } elsif ( $post->{item} eq "rename" ) {

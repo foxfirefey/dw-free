@@ -3,6 +3,11 @@ $_black:     #000;
 $_white:     #FFF;
 $_dark-gray: #636363;
 
+$_support-bg-blue:  #c5dff9;
+$_support-fg-blue:  darken( $_support-bg-blue, 15% );
+$_support-bg-green: #d0fbca;
+$_support-fg-green: darken( $_support-bg-green, 15% );
+
 // color assignment
 $text-color: $_black;
 $primary-text-color: $_white;
@@ -17,7 +22,6 @@ $form-font-color:   rgba(0,0,0,0.75);
 $form-bg-color:     #f7f7f7;
 
 // we want to base these on $body-font-color rather than the random variables they're based on
-$code-color:                            tint( $body-font-color, 20% );
 $blockquote-font-color:                 tint( $body-font-color, 20% );
 $small-font-color:                      $body-font-color;
 

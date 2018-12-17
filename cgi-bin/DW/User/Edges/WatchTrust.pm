@@ -709,7 +709,8 @@ sub trust_groups {
     my $id = delete $opts{id};
     my $bit = defined $id ? $id + 0 : 0;
     confess 'invalid bit number' if $bit < 0 || $bit > 60;
-    my $name = lc delete( $opts{name} );
+    my $name = delete( $opts{name} );
+    $name = lc $name if defined $name;
     confess 'invalid arguments' if %opts;
 
     return DW::User::Edges::WatchTrust::Loader::_trust_groups( $u, $bit, $name );
@@ -1014,8 +1015,8 @@ sub can_trust {
             return 0;
         }
 
-        # the target must not be purged/suspended/locked
-        if ( $tu->is_expunged || $tu->is_suspended || $tu->is_locked ) {
+        # the target must not be purged/suspended/locked/deleted
+        if ( $tu->is_expunged || $tu->is_suspended || $tu->is_locked || $tu->is_deleted ) {
             $$errref = LJ::Lang::ml( 'edges.trust.error.targetinvalidstatusvis' );
             return 0;
         }
@@ -1059,8 +1060,8 @@ sub can_watch {
     }
 
     if ( $tu ) {
-        # the target must not be purged/suspended/locked
-        if ( $tu->is_expunged || $tu->is_suspended || $tu->is_locked ) {
+        # the target must not be purged/suspended/locked/deleted
+        if ( $tu->is_expunged || $tu->is_suspended || $tu->is_locked || $tu->is_deleted ) {
             $$errref = LJ::Lang::ml( 'edges.watch.error.targetinvalidstatusvis' );
             return 0;
         }

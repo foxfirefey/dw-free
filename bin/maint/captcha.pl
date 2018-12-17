@@ -16,7 +16,7 @@
 
 use strict;
 
-use lib "$ENV{LJHOME}/cgi-bin";
+BEGIN { require "$ENV{LJHOME}/cgi-bin/LJ/Directories.pm"; }
 use DW::Captcha;
 use DW::Captcha::textCAPTCHA;
 
@@ -39,8 +39,9 @@ $maint{cache_textcaptcha} = sub {
     my $need = $MAX_CACHED - $count;
     print "pre-fetching $need textcaptcha items.\n";
 
-    # pre-fetch. Gradually ease off the timer if we were unable to get a captcha
-    # if we failed totally, we can always try again next time we run maint tasks
+    # pre-fetch. Gradually ease off the timer if we were unable to get a captcha.
+    # If we tried and failed too many times, stop for now.
+    # We can always try again next time we run maint tasks
     my @backoff_timer = ( 1, 3, 5, 0 );
     my $delay = 1;
     my @fetched_captchas = ();
@@ -50,14 +51,21 @@ $maint{cache_textcaptcha} = sub {
         if ( $captcha ) {
             push @fetched_captchas, $captcha;
         } else {
-            $delay = shift @backoff_timer unless $captcha;
+            $delay = shift @backoff_timer;
+            print $delay ? "setting delay to $delay.\n" : "ending on attempt #$i with " . scalar @fetched_captchas . " fetched.\n";
             last unless $delay;
+        }
+
+        if ( scalar @fetched_captchas >= 10 ) {
+            print "...flushing to DB\n";
+            DW::Captcha::textCAPTCHA::Logic->save_multi( @fetched_captchas );
+            @fetched_captchas = ();
         }
 
         sleep $delay;
     }
 
-    DW::Captcha::textCAPTCHA::Logic->save_multi( @fetched_captchas );
+    DW::Captcha::textCAPTCHA::Logic->save_multi( @fetched_captchas ) if @fetched_captchas;
     return 1;
 };
 

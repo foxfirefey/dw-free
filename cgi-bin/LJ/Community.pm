@@ -216,7 +216,7 @@ sub get_pending_invites {
     my $dbcr = LJ::get_cluster_def_reader($u);
     return LJ::error('db') unless $dbcr;
     my $pending = $dbcr->selectall_arrayref('SELECT commid, maintid, recvtime, args FROM inviterecv WHERE userid = ? ' .
-                                            'AND recvtime > UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL 30 DAY))', 
+                                            'AND recvtime > UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL 30 DAY))',
                                             undef, $u->{userid});
     return undef if $dbcr->err;
     return $pending;
@@ -309,8 +309,8 @@ sub join_community {
             $addpostacc = $canpost ? 1 : 0;
         } else {
             my $crow = $cu->get_community_row;
-            $addpostacc = $crow->{postlevel} eq 'members' ? 1 : 0
-                if defined $crow->{postlevel};
+            $addpostacc = $crow->{postlevel} eq 'members'
+                    || ( $crow->{postlevel} eq "select" && $cu->prop( 'comm_postlevel_new' ) );
         }
     }
 
@@ -343,7 +343,7 @@ sub get_community_row {
 
     # hit up database
     my $dbr = LJ::get_db_reader() or return;
-    my ($membership, $postlevel) = 
+    my ($membership, $postlevel) =
         $dbr->selectrow_array('SELECT membership, postlevel FROM community WHERE userid=?',
                               undef, $cu->{userid});
     return if $dbr->err;
@@ -366,7 +366,7 @@ sub get_community_row {
 sub get_pending_members {
     my ( $cu ) = @_;
     return unless LJ::isu( $cu );
-    
+
     # database request
     my $dbr = LJ::get_db_reader() or return;
     my $args = $dbr->selectcol_arrayref('SELECT arg1 FROM authactions WHERE userid = ? ' .
@@ -534,13 +534,17 @@ sub set_comm_settings {
     die "User cannot modify this community"
         unless $u->can_manage_other( $c );
 
-    die "Membership and posting levels are not available"
-        unless $opts->{membership} && $opts->{postlevel};
+    my @settings = qw/membership postlevel/;
+    my $updates = join(', ', map { $opts->{$_} ? "$_=?" : () } @settings);
+    my @update_values = map { $opts->{$_} || () } @settings;
+
+    die "Membership or posting level is not available"
+        unless @update_values;
 
     my $cid = $c->userid;
 
     my $dbh = LJ::get_db_writer();
-    $dbh->do("REPLACE INTO community (userid, membership, postlevel) VALUES (?,?,?)" , undef, $cid, $opts->{membership}, $opts->{postlevel});
+    $dbh->do("INSERT INTO community (userid, membership, postlevel) VALUES (?,?,?) ON DUPLICATE KEY UPDATE $updates" , undef, $cid, $opts->{membership} || 'open', $opts->{postlevel} || 'members', @update_values);
 
     my $memkey = [ $cid, "commsettings:$cid" ];
     LJ::MemCache::delete($memkey);
@@ -574,7 +578,7 @@ sub maintainer_linkbar {
             "<a href='$LJ::SITEROOT/customize/?authas=$username'>" . LJ::Lang::ml('/community/manage.bml.commlist.customize2') . "</a>",
         $page eq "settingsaccount" ?
             "<strong>" . LJ::Lang::ml('/community/manage.bml.commlist.actsettingsaccount') . "</strong>" :
-            "<a href='$LJ::SITEROOT/manage/settings?authas=$username&cat=community'>" . LJ::Lang::ml('/community/manage.bml.commlist.actsettingsaccount') . "</a>",
+            "<a href='$LJ::SITEROOT/manage/settings/?authas=$username&cat=community'>" . LJ::Lang::ml('/community/manage.bml.commlist.actsettingsaccount') . "</a>",
         $page eq "invites" ?
             "<strong>" . LJ::Lang::ml('/community/manage.bml.commlist.actinvites') . "</strong>" :
             "<a href='$LJ::SITEROOT/communities/$username/members/new'>" . LJ::Lang::ml('/community/manage.bml.commlist.actinvites') . "</a>",
@@ -636,6 +640,14 @@ sub membership_level {
     return $membership_level || '';
 }
 
+# returns the post level of a community
+sub post_level {
+    my $u = $_[0];
+    return undef unless $u->is_community;
+
+    my ( $membership_level, $post_level ) = $u->get_comm_settings;
+    return $post_level || '';
+}
 # helper methods for checking some values about communities
 sub is_closed_membership    { $_[0]->membership_level eq 'closed' ? 1 : 0;    }
 sub is_moderated_membership { $_[0]->membership_level eq 'moderated' ? 1 : 0; }
@@ -705,6 +717,8 @@ sub get_members_by_role {
 # returns same as get_members_by_role
 sub get_member {
     my ( $cu, $u ) = @_;
+
+    return ( {}, {} ) unless LJ::isu( $u );
 
     my $dbr = LJ::get_db_reader();
 

@@ -34,14 +34,6 @@
 
 <themeid> moodthemedata:<themeid> = { $moodid => { 'pic' => $pic, 'w' => $w, 'h' => $h } }
 
-<uid> s1overr:<uid> == overrides for a given user
-<uid> s1uc:<uid> == s1usercache row hashref
-      s1pubstyc == hashref keyed on styleid with values being rows from s1style table
-<styleid> s1styc:<styleid> == s1stylecache row hashref, 30 minutes
-<styleid> s1style:<styleid> == hashref of s1style row, without formatdata
-<styleid> s1style_all:<styleid> == hashref of s1style row, including formatdata
-<styleid> s1stylemap: <styleid> == userid who owns the given styleid
-
 <styleid> s2sl:<styleid> == hashref of s2stylelayers { type => s2lid }
 <styleid> s2s:<styleid> == hashref of s2styles row
           s2publayers == memoize LJ::S2::get_public_layers for 10 mins
@@ -104,11 +96,6 @@ includefile:<name> == text of BML include file
 <uid> inbox:bookmarks:<uid> == list of bookmarked qids for a user's notificationinbox (packed, see LJ::NotificationInbox->load_bookmarks)
 <uid> inbox:newct:<uid> == count of new messages in inbox
 
-<uid> jabpresence:<uid>:<reshash> == hash of jabber presence information for a particular userid/reshash pair
-<uid> jabuser:<uid> == hash of jabber resources for this user, keyed on resource name
-jabclusteraddr:<address> == id of server
-jabclusterid:<id> == address of server
-
 <uid> email:<uid> == email of user
 <uid> pw:<uid>    == password of user
 
@@ -128,14 +115,9 @@ jabclusterid:<id> == address of server
 
 <uid> supportpointsum:<uid> == total number of support points that this user has
 
-<uid> txtmsgsecurity:<uid> == security level that the user has set for their text messages
-
 # Widgets
 
 qotd:<type> == QotDs of the type <type> ('current' or 'old')
-
-blockwatch_ids   == hash of blockwatch ids mapped to names
-blockwatch_names == hash of blockwatch names mapped to ids
 
 ct_flag_locked == array of locked content flag ids
 ct_flag_cat_count == hash of content flag counts

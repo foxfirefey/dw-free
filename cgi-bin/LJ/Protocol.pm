@@ -23,8 +23,6 @@ use LJ::Event::JournalNewEntry;
 use LJ::Event::AddedToCircle;
 use LJ::Entry;
 use LJ::Poll;
-use LJ::EventLogRecord::NewEntry;
-use LJ::EventLogRecord::EditEntry;
 use LJ::Config;
 use LJ::Comment;
 
@@ -130,8 +128,8 @@ my %e = (
 sub translate
 {
     my ($u, $msg, $vars) = @_;
-    return LJ::Lang::get_text( LJ::isu( $u ) ? $u->prop( "browselang" ) : undef,
-                               "protocol.$msg", undef, $vars );
+    # we no longer support preferred language selection
+    return LJ::Lang::get_default_text( "protocol.$msg", $vars );
 }
 
 sub error_class
@@ -176,6 +174,8 @@ sub do_request
     my $apache_r = eval { BML::get_request() };
     $apache_r->notes->{codepath} = "protocol.$method"
         if $apache_r && ! $apache_r->notes->{codepath};
+
+    DW::Stats::increment( 'dw.protocol_request', 1, [ "method:$method" ] );
 
     if ($method eq "login")            { return login(@args);            }
     if ($method eq "getfriendgroups")  { return getfriendgroups(@args);  }
@@ -536,12 +536,12 @@ sub sendmessage
 
     my @msg;
     BML::set_language('en'); # FIXME
-    
+
     foreach my $to (@to) {
         my $tou = LJ::load_user($to);
         return fail($err, 100, $to)
             unless $tou;
-        
+
         my $msguserpic;
         $msguserpic = $req->{'userpic'} if defined $req->{'userpic'};
 
@@ -577,12 +577,6 @@ sub login
     my $u = $flags->{'u'};
     my $res = {};
     my $ver = $req->{'ver'};
-
-    ## check for version mismatches
-    ## non-Unicode installations can't handle versions >=1
-
-    return fail($err,207, "This installation does not support Unicode clients")
-        if $ver>=1 and not $LJ::UNICODE;
 
     # do not let locked people log in
     return fail($err, 308) if $u->is_locked;
@@ -1045,8 +1039,6 @@ sub common_event_validation
             my $uowner = $flags->{u_owner} || $flags->{u};
             return fail($err,207,'Posting in a community with international or special characters require a Unicode-capable LiveJournal client.  Download one at http://www.livejournal.com/download/.')
                 if ! $uowner->is_person;
-        } else {
-            return fail($err,207, "This installation does not support Unicode clients") unless $LJ::UNICODE;
         }
 
         # validate that the text is valid UTF-8
@@ -1128,9 +1120,10 @@ sub common_event_validation
     if ( ( my $pickwd = $req->{'props'}->{'picture_keyword'} ) and !$flags->{allow_inactive}) {
         my $pic = LJ::Userpic->new_from_keyword( $flags->{u}, $pickwd );
 
-        # need to make sure they aren't trying to post with an inactive keyword, but also
-        # we don't want to allow them to post with a keyword that has no pic at all to prevent
-        # them from deleting the keyword, posting, then adding it back with editicons.bml
+        # need to make sure they aren't trying to post with an inactive keyword,
+        # but also we don't want to allow them to post with a keyword that has
+        # no pic at all to prevent them from deleting the keyword, posting, then
+        # adding it back with the editicons page
         delete $req->{props}->{picture_keyword}
             unless $pic && $pic->state ne 'I';
     }
@@ -1216,9 +1209,8 @@ sub postevent
     return fail($err,306) unless $dbh && $dbcm && $uowner->writer;
     return fail($err,200) unless $req->{'event'} =~ /\S/;
 
-    ### make sure community or identity journals don't post
+    ### make sure community journals don't post
     return fail($err,150) if $u->is_community;
-    return fail($err,150) if ! $importer_bypass && ! $uowner->prop( "identity_posting" ) && $u->is_identity;
 
     # suspended users can't post
     return fail($err,305) if ! $importer_bypass && $u->is_suspended;
@@ -1317,14 +1309,6 @@ sub postevent
         $uowner->{$_} = $u->{$_} foreach @owner_props;
     } else {
         $uowner->preload_props( @owner_props );
-    }
-
-    # are they trying to post back in time?
-    if ($posterid == $ownerid && !$u->is_syndicated &&
-        !$time_was_faked && $u->{'newesteventtime'} &&
-        $eventtime lt $u->{'newesteventtime'} &&
-        !$req->{'props'}->{'opt_backdated'}) {
-        return fail($err, 153, "You have an entry which was posted at $u->{'newesteventtime'}, but you're trying to post an entry before this. Please check the date and time of both entries. If the other entry is set in the future on purpose, edit that entry to use the \"Don't show on Reading Pages\" option. Otherwise, use the \"Don't show on Reading Pages\" option for this entry instead.");
     }
 
     my $qallowmask = $req->{'allowmask'}+0;
@@ -1437,6 +1421,11 @@ sub postevent
             $res_done = 1;   # tell caller to bail out
             return;
         }
+
+        # If we're the importer, don't do duplicate detection here; the importer already
+        # has tooling to do that to compare remote vs local
+        return if $importer_bypass;
+
         my @parts = split(/:/, $u->{'dupsig_post'});
         if ($parts[0] eq $dupsig) {
             # duplicate!  let's make the client think this was just the
@@ -1508,12 +1497,6 @@ sub postevent
 
                     next unless $mod->is_visible;
 
-                    $mod->migrate_prop_to_esn( "opt_nomodemail", "CommunityModeratedEntryNew",
-                                                check_enabled => sub {
-                                                        my ( $prop ) = @_;
-                                                        # opt_nomodemail is a negative prop
-                                                        return $prop eq "1" ? 0 : 1;
-                                                });
                     LJ::Event::CommunityModeratedEntryNew->new( $mod, $uowner, $modid )->fire;
                 }
             }
@@ -1642,9 +1625,11 @@ sub postevent
             $logtag_opts->{set_string} = $taginput;
         }
 
-        my $rv = LJ::Tags::update_logtags($uowner, $jitemid, $logtag_opts);
-        return fail($err,157,$tagerr) unless $rv;
-        # the next line will propagate any "skippable" errors
+        # Do not fail here; worst case we lose tags, but if we fail here we don't perform
+        # half of the processing below
+        LJ::Tags::update_logtags($uowner, $jitemid, $logtag_opts);
+
+        # Propagate any "skippable" errors
         $res->{message} = $tagerr if $tagerr;
     }
 
@@ -1674,9 +1659,6 @@ sub postevent
 
     # argh, this is all too ugly.  need to unify more postpost stuff into async
     $u->invalidate_directory_record;
-
-    # note this post in recentactions table
-    LJ::DB::note_recent_action($uowner, 'post');
 
     # Insert the slug (try to, this will fail if this slug is already used)
     my $slug = LJ::canonicalize_slug( $req->{slug} );
@@ -1725,6 +1707,9 @@ sub postevent
     LJ::mark_user_active($u, 'post');
     LJ::mark_user_active($uowner, 'post') unless $u->equals( $uowner );
 
+    DW::Stats::increment( 'dw.action.entry.post', 1,
+            [ 'journal_type:' . $uowner->journaltype_readable ] );
+
     $res->{'itemid'} = $jitemid;  # by request of mart
     $res->{'anum'} = $anum;
     $res->{'url'} = $entry->url;
@@ -1735,13 +1720,9 @@ sub postevent
         push @jobs, LJ::Event::JournalNewEntry->new($entry)->fire_job;
         push @jobs, LJ::Event::OfficialPost->new($entry)->fire_job if $uowner->is_official;
 
-        # PubSubHubbub Support
-        LJ::Feed::generate_hubbub_jobs( $uowner, \@jobs ) unless $uowner->is_syndicated;
-
         # latest posts feed update
         DW::LatestFeed->new_item( $entry );
     }
-    push @jobs, LJ::EventLogRecord::NewEntry->new($entry)->fire_job;
 
     # update the sphinx search engine
     if ( @LJ::SPHINX_SEARCHD && !$importer_bypass ) {
@@ -1757,6 +1738,11 @@ sub postevent
         # TODO: error on failure?  depends on the job I suppose?  property of the job?
     }
 
+    # To minimize impact on legacy code, let's make sure the entry object in
+    # memory has been populated with data. Easiest way to do that is to call
+    # one of the methods that loads the relevant row from the database.
+    $entry->valid;
+
     return $res;
 }
 
@@ -1766,6 +1752,15 @@ sub editevent
     my $res = {};
     my $deleted = 0;
     un_utf8_request($req);
+
+    my $add_message = sub {
+        my $new_message = shift;
+        if ( $res->{message} ) {
+            $res->{message} .= "\n\n" . $new_message;
+        } else {
+            $res->{message} = $new_message;
+        }
+    };
 
     return undef unless authenticate($req, $err, $flags);
 
@@ -2084,7 +2079,7 @@ sub editevent
     my $clean_event = $event;
     my $errref;
     LJ::CleanHTML::clean_event( \$clean_event, { errref => \$errref } );
-    $res->{message} = translate( $u, $errref, { aopts => "href='$LJ::SITEROOT/editjournal?journal=" . $uowner->user . "&itemid=$ditemid'" } ) if $errref;
+    $add_message->( translate( $u, $errref, { aopts => "href='$LJ::SITEROOT/editjournal?journal=" . $uowner->user . "&itemid=$ditemid'" } ) ) if $errref;
 
     # up the revision number
     $req->{'props'}->{'revnum'} = ($curprops{$itemid}->{'revnum'} || 0) + 1;
@@ -2114,8 +2109,8 @@ sub editevent
                 err_ref => \$tagerr,
             });
 
-        # we only want to fail if we tried to edit the tags, not if we just tried to edit the security
-        return fail( $err, 157, $tagerr ) if $tagerr && $do_tags;
+        # we only want to warn if we tried to edit the tags, not if we just tried to edit the security
+        $add_message->( $tagerr ) if $tagerr && $do_tags;
     }
 
     # handle the props
@@ -2151,18 +2146,12 @@ sub editevent
 
     $uowner->clear_daycounts( $oldevent->{allowmask} + 0 || $oldevent->{security}, $qallowmask || $security );
 
-    $res->{itemid} = $itemid;
-    if (defined $oldevent->{'anum'}) {
-        $res->{'anum'} = $oldevent->{'anum'};
-        $res->{'url'} = LJ::item_link($uowner, $itemid, $oldevent->{'anum'});
-    }
-
     # Update the slug (try to, this will fail if this slug is already used). To
     # delete or change the slug, you must pass this parameter in. If it is not
     # present, we leave the slug alone.
     if ( exists $req->{slug} ) {
         LJ::MemCache::delete( [ $ownerid, "logslug:$ownerid:$itemid" ] );
-        $uowner->do( 'DELETE FROM logslugs WHERE journalid = ? AND jitemid = ?',
+        $u->do( 'DELETE FROM logslugs WHERE journalid = ? AND jitemid = ?',
                      undef, $ownerid, $itemid );
 
         my $slug = LJ::canonicalize_slug( $req->{slug} );
@@ -2170,14 +2159,22 @@ sub editevent
             $u->do( 'INSERT INTO logslugs (journalid, jitemid, slug) VALUES (?, ?, ?)',
                     undef, $ownerid, $itemid, $slug );
             if ( $u->err ) {
-                $res->{message} ||= 'Sorry, it looks like that slug has already been used. ' .
-                    'Your entry has been updated, but you can still edit it again to add a unique slug.';
+                $add_message->( 'Sorry, it looks like that slug has already been used. ' .
+                    'Your entry has been updated, but you can still edit it again to add a unique slug.' );
             }
         }
     }
 
     my $entry = LJ::Entry->new($ownerid, jitemid => $itemid);
-    LJ::EventLogRecord::EditEntry->new($entry)->fire;
+
+    $res->{itemid} = $itemid;
+    if (defined $oldevent->{'anum'}) {
+        $res->{'anum'} = $oldevent->{'anum'};
+        $res->{'url'} = $entry->url;
+    }
+
+    DW::Stats::increment( 'dw.action.entry.edit', 1,
+            [ 'journal_type:' . $uowner->journaltype_readable ] );
 
     # fired to copy the post over to the Sphinx search database
     if ( @LJ::SPHINX_SEARCHD && ( my $sclient = LJ::theschwartz() ) ) {
@@ -2188,10 +2185,7 @@ sub editevent
         );
     }
 
-    # PubSubHubbub Support
     my @jobs;
-    LJ::Feed::generate_hubbub_jobs( $uowner, \@jobs ) unless $uowner->is_syndicated;
-
     LJ::Hooks::run_hooks( "editpost", $entry, \@jobs );
 
     my $sclient = LJ::theschwartz();
@@ -2444,9 +2438,8 @@ sub getevents
     }
 
     # load properties. Even if the caller doesn't want them, we need
-    # them in Unicode installations to recognize older 8bit non-UF-8
+    # them in Unicode installations to recognize older 8bit non-UTF-8
     # entries.
-    unless ($req->{'noprops'} && !$LJ::UNICODE)
     {
         ### do the properties now
         $count = 0;
@@ -2509,12 +2502,12 @@ sub getevents
 
         # now that we have the subject, the event and the props,
         # auto-translate them to UTF-8 if they're not in UTF-8.
-        if ($LJ::UNICODE && $req->{ver} >= 1 && $evt->{props}->{unknown8bit}) {
+        if ( $req->{ver} >= 1 && $evt->{props}->{unknown8bit} ) {
             LJ::item_toutf8($uowner, \$t->[0], \$t->[1], $evt->{props});
             $evt->{converted_with_loss} = 1;
         }
 
-        if ($LJ::UNICODE && $req->{'ver'} < 1 && !$evt->{'props'}->{'unknown8bit'}) {
+        if ( $req->{'ver'} < 1 && !$evt->{'props'}->{'unknown8bit'} ) {
             unless ( LJ::is_ascii($t->[0]) &&
                      LJ::is_ascii($t->[1]) &&
                      LJ::is_ascii(join(' ', values %{$evt->{'props'}}) )) {

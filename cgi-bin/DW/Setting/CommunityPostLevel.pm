@@ -47,6 +47,9 @@ sub option {
         name => "${key}communitypostlevel",
         id => "${key}communitypostlevel",
         selected => $communitypostlevel,
+        class => "js-related-setting",
+        "data-related-setting-id" => DW::Setting::CommunityPostLevelNew->pkgkey,
+        "data-related-setting-on" => "select",
     }, @options );
 
     my $ret;
@@ -76,7 +79,6 @@ sub save {
 
     my $remote = LJ::get_remote();
 
-    my ( $current_comm_membership, $current_comm_postlevel ) = $u->get_comm_settings;
     my $val = $class->get_arg( $args, "communitypostlevel" );
 
     # postlevel and nonmember_posting are a single setting in the UI, but separate options in the backend
@@ -87,9 +89,12 @@ sub save {
         $nonmember_posting = 1;
     }
 
-    $u->set_comm_settings( $remote, { membership => $current_comm_membership, postlevel => $val });
+    $u->set_comm_settings( $remote, { postlevel => $val });
     $u->set_prop({ nonmember_posting => $nonmember_posting });
 
+    # unconditionally give posting access to all members
+    my $cid = $u->userid;
+    LJ::set_rel_multi( (map { [$cid, $_, 'P'] } $u->member_userids ) );
     return 1;
 }
 

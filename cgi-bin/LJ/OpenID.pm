@@ -15,7 +15,6 @@ package LJ::OpenID;
 
 use strict;
 use Digest::SHA1 qw(sha1 sha1_hex);
-use LWPx::ParanoidAgent;
 use LJ::OpenID::Cache;
 
 BEGIN {
@@ -38,10 +37,10 @@ sub server_enabled {
 sub server {
     my ($get, $post) = @_;
 
+    my %args = ( %{ $get || {} }, %{ $post || {} } );
+
     return Net::OpenID::Server->new(
-                                    compat       => $LJ::OPENID_COMPAT,
-                                    get_args     => $get  || {},
-                                    post_args    => $post || {},
+                                    args         => \%args,
 
                                     get_user     => \&LJ::get_remote,
                                     is_identity  => sub {
@@ -64,13 +63,10 @@ sub server {
 sub consumer {
     my $get_args = shift || {};
 
-    my $ua;
-    unless ($LJ::IS_DEV_SERVER) {
-        $ua = LWPx::ParanoidAgent->new(
-                                       timeout => 10,
-                                       max_size => 1024*300,
-                                       );
-    }
+    # always use a paranoid useragent
+    my $ua = LJ::get_useragent( role => "OpenID",
+                                timeout => 10,
+                                max_size => 1024*300, );
 
     my $cache = undef;
     if (! $LJ::OPENID_STATELESS && scalar(@LJ::MEMCACHE_SERVERS)) {
@@ -108,10 +104,6 @@ sub is_trusted {
     return 0 unless $u;
     # we always look up $is_trusted, even if $is_identity is false, to avoid timing attacks
 
-    # let certain hostnames be trusted at a site-to-site level, per policy.
-    my ($base_domain) = $trust_root =~ m!^https?://([^/]+)!;
-    return 1 if $LJ::OPENID_DEST_DOMAIN_TRUSTED{$base_domain};
-
     my $dbh = LJ::get_db_writer();
     my ($endpointid, $duration) = $dbh->selectrow_array("SELECT t.endpoint_id, t.duration ".
                                                         "FROM openid_trust t, openid_endpoint e ".
@@ -136,7 +128,8 @@ sub is_identity {
         # legacy:
         $ident eq "$LJ::SITEROOT/users/$user/" ||
         $ident eq "$LJ::SITEROOT/~$user/" ||
-        $ident eq "http://$user.$LJ::USER_DOMAIN/";
+        $ident eq "http://$user.$LJ::USER_DOMAIN/" ||
+        $ident eq "https://$user.$LJ::USER_DOMAIN/";
 
     return 0;
 }
@@ -195,10 +188,11 @@ sub hmac {
 sub blocked_hosts {
     my $csr = shift;
 
-    return do { my $dummy = 0; \$dummy; } if $LJ::IS_DEV_SERVER;
+    # uncomment this if you need to bypass this check for testing purposes
+    # return do { my $dummy = 0; \$dummy; } if $LJ::IS_DEV_SERVER;
 
     my $tried_local_id = 0;
-    $csr->ua->blocked_hosts(
+    $csr->ua->blocked_hosts( [
                             sub {
                                 my $dest = shift;
 
@@ -207,7 +201,7 @@ sub blocked_hosts {
                                     return 1;
                                 }
                                 return 0;
-                            });
+                            } ] );
     return \$tried_local_id;
 }
 

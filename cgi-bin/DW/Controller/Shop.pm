@@ -7,7 +7,7 @@
 # Authors:
 #      Mark Smith <mark@dreamwidth.org>
 #
-# Copyright (c) 2010-2013 by Dreamwidth Studios, LLC.
+# Copyright (c) 2010-2018 by Dreamwidth Studios, LLC.
 #
 # This program is free software; you may redistribute it and/or modify it under
 # the same terms as Perl itself. For a copy of the license, please reference
@@ -98,6 +98,7 @@ sub shop_transfer_points_handler {
 
         if ( !$u ) {
             $errs{foruser} = LJ::Lang::ml( 'shop.item.points.canbeadded.notauser' );
+            $rv->{can_have_reason} = DW::Shop::Item::Points->can_have_reason;
 
         } elsif ( my $item = DW::Shop::Item::Points->new( target_userid => $u->id, from_userid => $remote->id, points => $points, transfer => 1 ) ) {
             # provisionally create the item to access object methods
@@ -125,6 +126,7 @@ sub shop_transfer_points_handler {
 
         } else {
             $errs{foruser} = LJ::Lang::ml( 'shop.item.points.canbeadded.itemerror' );
+            $rv->{can_have_reason} = DW::Shop::Item::Points->can_have_reason;
         }
 
         # copy down anon value and reason
@@ -137,7 +139,7 @@ sub shop_transfer_points_handler {
             $u->give_shop_points( amount => $points, reason => sprintf( 'transfer from %s(%d)', $remote->user, $remote->id ) );
             $remote->give_shop_points( amount => -$points, reason => sprintf( 'transfer to %s(%d)', $u->user, $u->id ) );
 
-            my $get_text = sub { LJ::Lang::get_text( $u->prop( 'browselang' ), $_[0], undef, $_[1] ) };
+            my $get_text = sub { LJ::Lang::get_default_text( @_ ) };
 
             # send notification to person transferring the points...
             {
@@ -340,6 +342,12 @@ sub shop_refund_to_points_handler {
         $rv->{blocks} = int($rv->{status}->{expiresin} / (86400 * 30));
         $rv->{days} = $rv->{blocks} * 30;
         $rv->{points} = $rv->{blocks} * $rv->{rate};
+    }
+
+    unless ( $rv->{can_refund} ) {
+        # tell them how long they have to wait for their next refund.
+        my $last = $rv->{remote}->prop( "shop_refund_time" );
+        $rv->{next_refund} = LJ::mysql_date( $last + 86400 * 30 ) if $last;
     }
 
     my $r = DW::Request->get;

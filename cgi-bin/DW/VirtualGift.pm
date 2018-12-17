@@ -5,7 +5,7 @@
 # Authors:
 #      Jen Griffin <kareila@livejournal.com>
 #
-# Copyright (c) 2010 by Dreamwidth Studios, LLC.
+# Copyright (c) 2010-2013 by Dreamwidth Studios, LLC.
 #
 # This program is free software; you may redistribute it and/or modify it under
 # the same terms as Perl itself. For a copy of the license, please reference
@@ -32,8 +32,15 @@ sub _memcache_stored_props { return ( '1', PROPLIST ) }  #
 # end MemCacheable methods ###############################
 
 use Digest::MD5 qw/ md5_hex /;
+use DW::BlobStore;
+
 use LJ::Global::Constants;
-use LJ::Event::VgiftApproved;
+
+# Because events use this module, Perl warns about redefined subroutines.
+{
+    no warnings 'redefine';
+    use LJ::Event::VgiftApproved;
+}
 
 
 # TABLE OF CONTENTS
@@ -45,6 +52,8 @@ use LJ::Event::VgiftApproved;
 # 5. Aggregate methods (for mass lookups)
 # 6. End-user display methods (making things look purty)
 # 7. Notification methods (let people know about things)
+
+# Transaction methods moved to DW::VirtualGiftTransaction
 
 
 
@@ -80,7 +89,7 @@ sub create {
     # opts are values for object properties as defined in PROPLIST.
     # also allowed: 'error' which should be a scalar reference;
     # 'img_small' & 'img_large' which should contain raw
-    # image data to be stored in MogileFS.
+    # image data to be stored in media storage (blobstore).
     my ( $class, %opts ) = @_;
     my %vg;  # hash for storing row data
     foreach ( PROPLIST ) {
@@ -162,8 +171,8 @@ sub _savepic {
     my ( undef, undef, $filetype ) = Image::Size::imgsize( $data );
     return undef unless $mime{$filetype};
 
-    return undef unless my $mc = LJ::mogclient();
-    return undef unless $mc->store_content( $key, 'vgifts', $data );
+    return undef unless
+        DW::BlobStore->store( vgifts => $key, $data );
 
     return $mime{$filetype};
 }
@@ -195,7 +204,7 @@ sub edit {
     # opts are values for object properties as defined in PROPLIST.
     # also allowed: 'error' which should be a scalar reference;
     # 'img_small' & 'img_large' which should contain raw
-    # image data to be stored in MogileFS.
+    # image data to be stored in media storage (blobstore).
     my ( $self, %opts ) = @_;
     return undef unless $self->id;
 
@@ -451,11 +460,9 @@ sub delete {
     $u = $self->creator unless LJ::isu( $u );
     return undef unless $self->can_be_deleted_by( $u );
 
-    # delete pictures from mogilefs
-    if ( $LJ::MOGILEFS_CONFIG{hosts} ) {
-        LJ::mogclient()->delete( $self->img_mogkey( 'large' ) );
-        LJ::mogclient()->delete( $self->img_mogkey( 'small' ) );
-    }
+    # delete pictures from storage
+    DW::BlobStore->delete( vgifts => $self->img_mogkey( 'large' ) );
+    DW::BlobStore->delete( vgifts => $self->img_mogkey( 'small' ) );
 
     # wipe the relevant rows from the database
     $self->_tagwipe;
@@ -641,11 +648,9 @@ sub checksum {
         push @attrvals, $self->{$prop} || 'NULL';
     }
 
-    if ( my $mc = LJ::mogclient() ) {
-        foreach my $size ( qw( large small ) ) {
-            my $data = $mc->get_file_data( $self->img_mogkey( $size ) );
-            push @attrvals, $data ? $$data : 'NULL';
-        }
+    foreach my $size ( qw( large small ) ) {
+        my $data = DW::BlobStore->retrieve( vgifts => $self->img_mogkey( $size ) );
+        push @attrvals, ref $data eq 'SCALAR' ? $$data : 'NULL';
     }
 
     return md5_hex( join ' ', @attrvals );
@@ -701,7 +706,7 @@ sub _expire_relevant_keys {
         # expire memcache for img_large (set in Apache::LiveJournal)
         LJ::MemCache::delete( $self->img_memkey( 'large' ) );
     }
-    
+
     return $self->_expire_aggregate_keys( @props );
 }
 
@@ -717,12 +722,12 @@ sub _expire_aggregate_keys {
         # expire memcache for list_created_by
         LJ::MemCache::delete( $self->created_by_memkey );
     }
-    
+
     if ( $prop{creatorid} || $prop{active} || $prop{approved} ) {
         # expire memcache for fetch_creatorcounts
         LJ::MemCache::delete( $self->creatorcounts_memkey );
     }
-    
+
     return $self;
 }
 
@@ -830,7 +835,7 @@ sub _valid_name {
     my ( $self, $name, $err ) = @_;
 
     return 1 unless $name;
-    
+
     if ( $name !~ /\S/ || $name =~ /[\r\n\t\0]/ ) {
         $$err = LJ::Lang::ml('vgift.error.validate.name');
         return 0;
@@ -1005,7 +1010,7 @@ sub _fetch_tagcounts {
             "(SELECT DISTINCT tagid FROM vgift_tagpriv WHERE tagid NOT IN ".
             "(SELECT DISTINCT tagid FROM vgift_tags)) ORDER BY keyword ASC" );
         die $dbr->errstr if $dbr->err;
-        
+
         $counts->{$_} = 0 foreach @$privempty;
 
         LJ::MemCache::set( $memkey, $counts, 24*3600 );

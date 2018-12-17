@@ -14,7 +14,6 @@
 # part of this distribution.
 
 use strict;
-use lib "$LJ::HOME/cgi-bin";
 use Errno qw(ENOENT);
 use LJ::Config;
 LJ::Config->load;
@@ -58,9 +57,7 @@ BML::register_hook("codeerror", sub {
     }
 });
 
-if ($LJ::UNICODE) {
-    BML::set_config("DefaultContentType", "text/html; charset=utf-8");
-}
+BML::set_config("DefaultContentType", "text/html; charset=utf-8");
 
 # register BML multi-language hook
 BML::register_hook("ml_getter", \&LJ::Lang::get_text);
