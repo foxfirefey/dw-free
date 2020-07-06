@@ -25,7 +25,13 @@
 
 .circle.access.y=Gives you access
 
+.circle.admin=Administrator
+
 .circle.header=Current Relationships
+
+.circle.show_banned=<a [[aopts]]>Show accounts you have banned?</a>
+
+.circle.hide_banned=<a [[aopts]]>Hide accounts you have banned?</a>
 
 .circle.header.comms=Communities ([[num]])
 
@@ -34,6 +40,8 @@
 .circle.header.people=People ([[num]])
 
 .circle.intro=Here are the <a [[aopts1]]>people</a>, <a [[aopts2]]>communities</a>, and <a [[aopts3]]>feeds</a> that are in your circle.  You can change who appears on your Reading Page and who you give access to by using the check boxes.  You can also <a [[aopts4]]>edit your notification tracking options</a>.
+
+.circle.intro2=Here are the <a [[aopts1]]>people</a>, <a [[aopts2]]>communities</a>, and <a [[aopts3]]>feeds</a> that are in your circle.  You can change who appears on your Reading Page and who you give access to by using the check boxes.  You can also <a [[aopts4]]>edit your notification tracking options</a>.  To ban or unban Dreamwidth users from commenting on your posts, visit <a [[aopts5]]>Ban and Unban Accounts</a>.
 
 .circle.intro.feeds=You can also use [[sitename]] as a syndicated feed reader to have posts from other sites show up on your [[sitename]] reading page. To browse existing feeds or add a new one, visit <a [[aopts]]>the list of popular feeds.</a>
 
@@ -47,13 +55,7 @@
 
 .circle.join.open=(Open)
 
-.circle.maintainer=Maintainer
-
 .circle.member=Member
-
-.circle.member.n=Not a member
-
-.circle.member.y=Member
 
 .circle.na=N/A
 

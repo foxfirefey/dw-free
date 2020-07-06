@@ -20,17 +20,15 @@
 
 use strict;
 use warnings;
-use lib "$ENV{'LJHOME'}/cgi-bin";
+
 BEGIN {
-    require "$ENV{'LJHOME'}/cgi-bin/ljlib.pl";
+    require "$ENV{LJHOME}/cgi-bin/ljlib.pl";
 }
 use LJ::Poll;
 
-my $id = $ARGV[0] or die "Usage: $0 <poll_id>";
+my $id       = $ARGV[0] or die "Usage: $0 <poll_id>";
 my $filename = "$id.xml";
-open my($fh), ">$filename" or die "Can't write to '$filename': $!";
+open my ($fh), ">$filename" or die "Can't write to '$filename': $!";
 LJ::Poll->new($id)->dump_poll($fh);
 $fh->close;
-
-
 

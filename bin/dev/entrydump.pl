@@ -14,24 +14,25 @@
 # part of this distribution.
 
 use strict;
-use lib "$ENV{LJHOME}/cgi-bin";
+
 BEGIN {
-    require 'ljlib.pl';
+    require "$ENV{LJHOME}/cgi-bin/ljlib.pl";
 }
 use LJ::Entry;
 
 my $url = shift;
 
-LJ::DB::no_cache( sub {
+LJ::DB::no_cache(
+    sub {
 
-    my $entry = LJ::Entry->new_from_url( $url );
+        my $entry = LJ::Entry->new_from_url($url);
 
-    print "entry = $entry\n";
-    use Data::Dumper;
+        print "entry = $entry\n";
+        use Data::Dumper;
 
-    print Dumper( $entry->props, clean($entry->event_orig), clean($entry->event_raw) );
-} );
-
+        print Dumper( $entry->props, clean( $entry->event_orig ), clean( $entry->event_raw ) );
+    }
+);
 
 sub clean {
     my $txt = shift;

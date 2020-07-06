@@ -19,8 +19,7 @@ body<=
 
  use strict;
  use vars qw/ $title /;
-
- LJ::set_active_crumb('stats');
+ use DW::Countries;
 
  my $dbr = LJ::get_db_reader();
  my $sth;
@@ -40,10 +39,12 @@ body<=
      return "<?h1 Sorry... h1?><?p No statistics are available.  If you're the administrator for this site, run <b>ljmaint.pl genstats</b>, or ideally, put it in cron to run nightly. p?>";
  }
 
- $sth = $dbr->prepare("SELECT c.item, s.statval FROM stats s, codes c WHERE c.type='country' AND s.statcat='country' AND s.statkey=c.code ORDER BY s.statval DESC LIMIT 15");
+ my %countries;
+ DW::Countries->load( \%countries );
+ $sth = $dbr->prepare("SELECT statkey, statval FROM stats WHERE statcat='country' ORDER BY statval DESC LIMIT 15");
  $sth->execute;
- while ($_ = $sth->fetchrow_hashref) {
-     $stat{'country'}->{$_->{'item'}} = $_->{'statval'};
+ while (my $row = $sth->fetchrow_hashref) {
+     $stat{'country'}->{$countries{$row->{statkey}}} = $row->{statval};
  }
 
  $sth = $dbr->prepare("SELECT c.item, s.statval FROM stats s, codes c WHERE c.type='state' AND s.statcat='stateus' AND s.statkey=c.code ORDER BY s.statval DESC LIMIT 15");
@@ -99,80 +100,194 @@ body<=
      ret => \$ret,
  });
 
- if ( LJ::is_enabled('stats-recentupdates') ) 
- { 
+ if ( LJ::is_enabled('stats-recentupdates') )
+ {
      $ret .= "<h1>$ML{'.recent.header'}</h1>";
-	 # Personal accounts
-     $ret .= "<p>$ML{'.recent.desc.personal'}<ul>";
-     $sth = $dbr->prepare( "SELECT u.user, u.name, uu.timeupdate FROM user u, userusage uu WHERE u.userid=uu.userid AND uu.timeupdate > DATE_SUB(NOW(), INTERVAL 30 DAY) AND u.journaltype = 'P' ORDER BY uu.timeupdate DESC LIMIT 10" );
+     # Personal accounts
+     $ret .= "<p>$ML{'.recent.desc.personal'}</p><ul>";
+     $sth = $dbr->prepare( "SELECT u.userid, uu.timeupdate FROM user u, userusage uu WHERE u.userid=uu.userid AND uu.timeupdate > DATE_SUB(NOW(), INTERVAL 30 DAY) AND u.journaltype = 'P' ORDER BY uu.timeupdate DESC LIMIT 20" );
      $sth->execute;
-     my $ct;
-     while (my ($iuser, $iname, $itime) = $sth->fetchrow_array) {
-         $ret .= "<li><a href='/users/$iuser/'><?_eh $iname _eh?></a>, $itime</li>\n";
-         $ct++;
+     my $accounts = $sth->fetchall_arrayref({});
+
+     if ( @$accounts ) {
+         my $userobj_for = LJ::load_userids(map { $_->{userid} } @$accounts);
+         my $i = 0;
+
+         ACCOUNT:
+         foreach my $account (@$accounts) {
+             my $u = $userobj_for->{$account->{userid}};
+
+             next ACCOUNT unless $u && $u->is_visible;
+             last if $i > 9;
+
+             $ret .= sprintf("<li>%s - %s, %s</li>\n",
+                 $u->ljuser_display,
+                 $u->name_html,
+                 $account->{timeupdate}
+             );
+             $i++;
+         }
      }
-     $ret .= "<li><i>$ML{'.notavailable'}</i></li>" unless $ct;
-	 $ret .= "</ul> </p>";
-	 # Community accounts
-	 $ret .= "<p>$ML{'.recent.desc.community'}<ul>";
-     $sth = $dbr->prepare( "SELECT u.user, u.name, uu.timeupdate FROM user u, userusage uu WHERE u.userid=uu.userid AND uu.timeupdate > DATE_SUB(NOW(), INTERVAL 30 DAY) AND u.journaltype = 'C' ORDER BY uu.timeupdate DESC LIMIT 10" );
+     else {
+         $ret .= "<li><i>$ML{'.notavailable'}</i></li>";
+     }
+
+     $ret .= "</ul>\n";
+     # Community accounts
+     $ret .= "<p>$ML{'.recent.desc.community'}</p><ul>";
+     $sth = $dbr->prepare( "SELECT u.userid, uu.timeupdate FROM user u, userusage uu WHERE u.userid=uu.userid AND uu.timeupdate > DATE_SUB(NOW(), INTERVAL 30 DAY) AND u.journaltype = 'C' ORDER BY uu.timeupdate DESC LIMIT 20" );
      $sth->execute;
-     my $ct = 0;
-     while (my ($iuser, $iname, $itime) = $sth->fetchrow_array) {
-         $ret .= "<li><a href='/users/$iuser/'><?_eh $iname _eh?></a>, $itime</li>\n";
-         $ct++;
+     $accounts = $sth->fetchall_arrayref({});
+
+     if ( @$accounts ) {
+         my $userobj_for = LJ::load_userids(map { $_->{userid} } @$accounts);
+         my $i = 0;
+
+         ACCOUNT:
+         foreach my $account (@$accounts) {
+             my $u = $userobj_for->{$account->{userid}};
+
+             next ACCOUNT unless $u && $u->is_visible;
+             last if $i > 9;
+
+             $ret .= sprintf("<li>%s - %s, %s</li>\n",
+                 $u->ljuser_display,
+                 $u->name_html,
+                 $account->{timeupdate}
+             );
+             $i++;
+         }
      }
-     $ret .= "<li><i>$ML{'.notavailable'}</i></li>" unless $ct;	
-     $ret .= "</ul> </p>";
-	 # Feeds
-	 $ret .= "<p>$ML{'.recent.desc.feeds'}</p><ul>";
-	 $sth = $dbr->prepare( "SELECT u.user, u.name, uu.timeupdate FROM user u, userusage uu WHERE u.userid=uu.userid AND uu.timeupdate > DATE_SUB(NOW(), INTERVAL 30 DAY) AND u.journaltype = 'Y' ORDER BY uu.timeupdate DESC LIMIT 10" );
+     else {
+         $ret .= "<li><i>$ML{'.notavailable'}</i></li>";
+     }
+
+     $ret .= "</ul>\n";
+     # Feeds
+     $ret .= "<p>$ML{'.recent.desc.feeds'}</p><ul>";
+     $sth = $dbr->prepare( "SELECT u.userid, uu.timeupdate FROM user u, userusage uu WHERE u.userid=uu.userid AND uu.timeupdate > DATE_SUB(NOW(), INTERVAL 30 DAY) AND u.journaltype = 'Y' ORDER BY uu.timeupdate DESC LIMIT 20" );
      $sth->execute;
-     my $ct = 0;
-     while (my ($iuser, $iname, $itime) = $sth->fetchrow_array) {
-         $ret .= "<li><a href='/users/$iuser/'><?_eh $iname _eh?></a>, $itime</li>\n";
-         $ct++;
+     $accounts = $sth->fetchall_arrayref({});
+
+     if ( @$accounts ) {
+         my $userobj_for = LJ::load_userids(map { $_->{userid} } @$accounts);
+         my $i = 0;
+
+         ACCOUNT:
+         foreach my $account (@$accounts) {
+             my $u = $userobj_for->{$account->{userid}};
+
+             next ACCOUNT unless $u && $u->is_visible;
+             last if $i > 9;
+
+             $ret .= sprintf("<li>%s - %s, %s</li>\n",
+                 $u->ljuser_display,
+                 $u->name_html,
+                 $account->{timeupdate}
+             );
+             $i++;
+         }
      }
-     $ret .= "<li><i>$ML{'.notavailable'}</i></li>" unless $ct;
-     $ret .= "</ul> \n";
+     else {
+         $ret .= "<li><i>$ML{'.notavailable'}</i></li>";
+     }
+
+     $ret .= "</ul>\n";
  }
 
- if ( LJ::is_enabled('stats-newjournals') ) 
+ if ( LJ::is_enabled('stats-newjournals') )
  {
      $ret .= "<h1>$ML{'.new.header'}</h1>";
-	 # Personal accounts
-     $ret .= "<p>$ML{'.new.desc.personal'}<ul>";
-     $sth = $dbr->prepare("SELECT u.user, u.name, uu.timeupdate FROM user u, userusage uu WHERE u.userid=uu.userid AND uu.timeupdate IS NOT NULL AND u.journaltype = 'P' ORDER BY uu.timecreate DESC LIMIT 10");
+     # Personal accounts
+     $ret .= "<p>$ML{'.new.desc.personal'}</p><ul>";
+     $sth = $dbr->prepare("SELECT u.userid, uu.timeupdate FROM user u, userusage uu WHERE u.userid=uu.userid AND uu.timeupdate IS NOT NULL AND u.journaltype = 'P' AND u.statusvis != 'S' ORDER BY uu.timecreate DESC LIMIT 20");
      $sth->execute;
-     my $ct;
-     while (my ($iuser, $iname, $itime) = $sth->fetchrow_array) {
-         $ret .= "<li><a href='/users/$iuser/'><?_eh $iname _eh?></a>, $itime</li>\n";
-         $ct++;
+     my $accounts = $sth->fetchall_arrayref({});
+
+     if ( @$accounts ) {
+         my $userobj_for = LJ::load_userids(map { $_->{userid} } @$accounts);
+         my $i = 0;
+
+         ACCOUNT:
+         foreach my $account (@$accounts) {
+             my $u = $userobj_for->{$account->{userid}};
+
+             next ACCOUNT unless $u && $u->is_visible;
+             last if $i > 9;
+
+             $ret .= sprintf("<li>%s - %s, %s</li>\n",
+                 $u->ljuser_display,
+                 $u->name_html,
+                 $account->{timeupdate}
+             );
+             $i++;
+         }
      }
-     $ret .= "<li><i>$ML{'.notavailable'}</i></li>" unless $ct;
-     $ret .= "</ul> </p>";
-	 # Community accounts
-     $ret .= "<p>$ML{'.new.desc.community'}<ul>";
-     $sth = $dbr->prepare("SELECT u.user, u.name, uu.timeupdate FROM user u, userusage uu WHERE u.userid=uu.userid AND uu.timeupdate IS NOT NULL AND u.journaltype = 'C' ORDER BY uu.timecreate DESC LIMIT 10");
+     else {
+         $ret .= "<li><i>$ML{'.notavailable'}</i></li>";
+     }
+
+     $ret .= "</ul>\n";
+     # Community accounts
+     $ret .= "<p>$ML{'.new.desc.community'}</p><ul>";
+     $sth = $dbr->prepare("SELECT u.userid, uu.timeupdate FROM user u, userusage uu WHERE u.userid=uu.userid AND uu.timeupdate IS NOT NULL AND u.journaltype = 'C' ORDER BY uu.timecreate DESC LIMIT 20");
      $sth->execute;
-     my $ct;
-     while (my ($iuser, $iname, $itime) = $sth->fetchrow_array) {
-         $ret .= "<li><a href='/users/$iuser/'><?_eh $iname _eh?></a>, $itime</li>\n";
-         $ct++;
+     $accounts = $sth->fetchall_arrayref({});
+
+     if ( @$accounts ) {
+         my $userobj_for = LJ::load_userids(map { $_->{userid} } @$accounts);
+         my $i = 0;
+
+         ACCOUNT:
+         foreach my $account (@$accounts) {
+             my $u = $userobj_for->{$account->{userid}};
+
+             next ACCOUNT unless $u && $u->is_visible;
+             last if $i > 9;
+
+             $ret .= sprintf("<li>%s - %s, %s</li>\n",
+                 $u->ljuser_display,
+                 $u->name_html,
+                 $account->{timeupdate}
+             );
+             $i++;
+         }
      }
-     $ret .= "<li><i>$ML{'.notavailable'}</i></li>" unless $ct;
-     $ret .= "</ul> </p>";
-	 # Feeds
+     else {
+         $ret .= "<li><i>$ML{'.notavailable'}</i></li>";
+     }
+
+     $ret .= "</ul>\n";
+     # Feeds
      $ret .= "<p>$ML{'.new.desc.feeds'}</p><ul>";
-     $sth = $dbr->prepare("SELECT u.user, u.name, uu.timeupdate FROM user u, userusage uu WHERE u.userid=uu.userid AND uu.timeupdate IS NOT NULL AND u.journaltype = 'Y' ORDER BY uu.timecreate DESC LIMIT 10");
+     $sth = $dbr->prepare("SELECT u.userid, uu.timeupdate FROM user u, userusage uu WHERE u.userid=uu.userid AND uu.timeupdate IS NOT NULL AND u.journaltype = 'Y' ORDER BY uu.timecreate DESC LIMIT 20");
      $sth->execute;
-     my $ct;
-     while (my ($iuser, $iname, $itime) = $sth->fetchrow_array) {
-         $ret .= "<li><a href='/users/$iuser/'><?_eh $iname _eh?></a>, $itime</li>\n";
-         $ct++;
+     $accounts = $sth->fetchall_arrayref({});
+
+     if ( @$accounts ) {
+         my $userobj_for = LJ::load_userids(map { $_->{userid} } @$accounts);
+         my $i = 0;
+
+         ACCOUNT:
+         foreach my $account (@$accounts) {
+             my $u = $userobj_for->{$account->{userid}};
+
+             next ACCOUNT unless $u && $u->is_visible;
+             last if $i > 9;
+
+             $ret .= sprintf("<li>%s - %s, %s</li>\n",
+                 $u->ljuser_display,
+                 $u->name_html,
+                 $account->{timeupdate}
+             );
+            $i++;
+         }
      }
-     $ret .= "<li><i>$ML{'.notavailable'}</i></li>" unless $ct;
-     $ret .= "</ul> \n";
+     else {
+         $ret .= "<li><i>$ML{'.notavailable'}</i></li>";
+     }
+
+     $ret .= "</ul>\n";
  }
 
      $ret .= "<h1>$ML{'.demographics.header'}</h1>";
@@ -260,16 +375,22 @@ body<=
      }
  }
 
+my %graphs = ( newbyday => 'stats/newbyday.png',
+             );
 
- # return early, since the graphs below are pretty much broken now
- # with index changes.  FIXME: make alternate means to generate stats
- return $ret;
+foreach ( keys %graphs ) {
+    delete $graphs{$_} unless -f "$LJ::HOME/htdocs/$graphs{$_}";
+}
 
- ### graphs!
- $ret .= "<?h1 Pretty Graphs! h1?><?p These are the most fun, aren't they? p?>";
- 
- $ret .= "<?h2 New accounts -- last 60 days h2?><?p How fast are we growing? p?>";
- $ret .= "<p align='center'><img src=\"stats/newbyday.png\" width='520' height='350' /></p>";
+if ( %graphs ) {
+    $ret .= "<?h1 $ML{'.graphs.header'} h1?><?p $ML{'.graphs.desc'} p?>";
+
+    if ( $graphs{newbyday} ) {
+        $ret .= "<?h2 $ML{'.graphs.newbyday.header'} h2?>";
+        $ret .= "<?p $ML{'.graphs.newbyday.desc'} p?>";
+        $ret .= "<p align='center'><img src=\"$graphs{newbyday}\" width='520' height='350' /></p>";
+    }
+}
 
  return $ret;
 

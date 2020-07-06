@@ -13,16 +13,14 @@
 # A copy of that license can be found in the LICENSE file included as
 # part of this distribution.
 
-
 package LJ::ModPerl;
 
 use strict;
-use lib "$ENV{LJHOME}/extlib/lib/perl5";
-use lib "$ENV{LJHOME}/cgi-bin";
 
 # very important that this is done early!  everything else in the LJ
 # setup relies on $LJ::HOME being set...
 $LJ::HOME = $ENV{LJHOME};
+use lib "$ENV{LJHOME}/extlib/lib/perl5";
 
 #use APR::Pool ();
 #use Apache::DB ();
@@ -36,7 +34,7 @@ $LJ::HOME = $ENV{LJHOME};
 #Apache2::ServerUtil->server->add_config( [ 'PerlResponseHandler LJ::ModPerl', 'SetHandler perl-script' ] );
 
 #sub handler {
-#    my $r = shift;
+#    my $apache_r = shift;
 #
 #    print STDERR Dumper(\@_);
 #    print STDERR Dumper(\%ENV);
@@ -46,7 +44,7 @@ $LJ::HOME = $ENV{LJHOME};
 #}
 
 # pull in libraries and do per-start initialization once.
-require "modperl_subs.pl";
+require "$LJ::HOME/cgi-bin/modperl_subs.pl";
 
 # do per-restart initialization
 LJ::ModPerl::setup_restart();
@@ -58,11 +56,11 @@ delete $INC{"$LJ::HOME/cgi-bin/modperl.pl"};
 
 # remember modtime of all loaded libraries
 %LJ::LIB_MOD_TIME = ();
-while (my ($k, $file) = each %INC) {
-    next unless defined $file; # Happens if require caused a runtime error
+while ( my ( $k, $file ) = each %INC ) {
+    next unless defined $file;    # Happens if require caused a runtime error
     next if $LJ::LIB_MOD_TIME{$file};
     next unless $file =~ m!^\Q$LJ::HOME\E!;
-    my $mod = (stat($file))[9];
+    my $mod = ( stat($file) )[9];
     $LJ::LIB_MOD_TIME{$file} = $mod;
 }
 

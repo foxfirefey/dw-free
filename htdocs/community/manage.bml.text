@@ -1,4 +1,5 @@
 ;; -*- coding: utf-8 -*-
+# do not delete; still used by the community linkbar
 .commlist.actinfo=Information
 
 .commlist.actinfo2=Profile
@@ -47,6 +48,8 @@
 .create.text2=You can also <a [[aopts]]><strong>create a new community</strong></a>.
 
 .error.badaccounttype=You must be logged in to a personal account to access this page.
+
+.invite.text=You can <a [[aopts]]>view any pending invitations</a> you've received to join communities.
 
 .joinmail.body2=For communities with moderated membership, you can <a [[aopts]]>be notified</a> when anyone requests membership.
 

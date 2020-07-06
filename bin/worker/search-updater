@@ -13,12 +13,12 @@
 # part of this distribution.
 
 package LJ::Worker::UserSearch::Updater;
+
 use strict;
-use warnings;
-use lib "$ENV{LJHOME}/cgi-bin";
 BEGIN {
-    require "ljlib.pl";
+    require "$ENV{LJHOME}/cgi-bin/ljlib.pl";
 }
+
 use base 'LJ::Worker::Manual';
 use LJ::UserSearch::MetaUpdater;
 use Carp;

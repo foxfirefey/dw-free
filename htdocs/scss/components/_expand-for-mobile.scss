@@ -1,0 +1,15 @@
+// these are for elements that we want to be full width on mobile
+// but no specific width in larger screens (so the grid system isn't appropriate)
+// e.g., a row of buttons
+
+@import "foundation/base";
+
+.expand-for-mobile {
+  width: 100%;
+}
+
+@media #{$medium-up} {
+    .expand-for-mobile {
+        width: auto;
+    }
+}

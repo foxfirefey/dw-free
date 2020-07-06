@@ -15,9 +15,9 @@
 # 'perldoc perlartistic' or 'perldoc perlgpl'.
 #
 
-use lib "$ENV{LJHOME}/cgi-bin";
+use strict;
 BEGIN {
-    require 'ljlib.pl';
+    require "$ENV{LJHOME}/cgi-bin/ljlib.pl";
 }
 
 use Getopt::Long;

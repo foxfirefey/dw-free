@@ -9,6 +9,8 @@
 
 .error.nocommentspost=Comments are disabled for this entry.
 
+.error.nocomment_quick=You cannot reply as this account. You can select a different one under More Options.
+
 .error.noreplypost=Reply-to entry not found.  It may have been deleted.
 
 .error.noreply_deleted=You can't reply to this comment because it has been deleted.
@@ -65,6 +67,8 @@
 
 .opt.message=Message:
 
+.opt.message2=Message
+
 .opt.noanonpost=This account has disabled anonymous posting.
 
 .opt.noanonpost.nonpublic=You can't comment anonymously on a protected entry.
@@ -79,8 +83,6 @@
 
 .opt.openid.loggedin=OpenID identity:
 
-.opt.openidsignin2=You can comment on this post while signed in with an account from many other sites, once you have confirmed your email address. <a [[aopts]]>Sign in using OpenID</a>.
-
 .opt.preview=Preview
 
 .opt.siteuser=[[sitename]] account
@@ -88,6 +90,8 @@
 .opt.spellcheck=Spell check entry before posting
 
 .opt.subject=Subject:
+
+.opt.subject2=Subject
 
 .opt.submit=Post Comment
 

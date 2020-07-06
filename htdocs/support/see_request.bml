@@ -25,8 +25,6 @@ body<=
     use vars qw(%FORM);
     use DW::Template;
 
-    LJ::set_dynamic_crumb('Request #' . ($FORM{'id'}+0), 'supporthelp');
-
     LJ::need_res( { group => "jquery" }, "js/jquery.supportform.js", "stc/simple-form.css" );
     LJ::set_active_resource_group( "jquery" );
 
@@ -64,10 +62,10 @@ body<=
         if ($foundspid) {
             return BML::redirect("see_request?id=$foundspid");
         } else {
+            my $extra = $find eq "cnext" || $find eq "cprev" ? "_cat" : "" ;
+            my $text = $find eq 'next' || $find eq 'cnext' ? BML::ml('.error.nonext' . $extra) : BML::ml('.error.noprev' . $extra);
             my $goback = $sp ? BML::ml('.goback.text', {request_link=>"href='see_request?id=$spid'", spid=>$spid}) : undef;
-            my $what = $find eq 'next' || $find eq 'cnext' ? $ML{'.next'} : $ML{'.previous'};
-            my $cat = $find eq 'cnext' || $find eq 'cprev' ? $ML{'.incat'} : undef;
-            return "<?h1 $ML{'.error'} h1?>".BML::ml('.error.text2', {what=>$what, cat=>$cat})." $goback";
+            return "<?h1 $ML{'.error'} h1?>" . $text . $goback;
         }
     }
 
@@ -108,7 +106,7 @@ body<=
         $clusterdown = 1 unless $dbr;
 
         $email = $u->email_raw if $u->email_raw;
-        $u->preload_props( "stylesys", "s2_style", "browselang", "schemepref" )
+        $u->preload_props( "stylesys", "s2_style", "schemepref" )
             unless $clusterdown;
     }
 
@@ -168,14 +166,14 @@ body<=
     my $ret = "";
     $ret .= "<table summary='' class='support-requesttable'>\n";
     $ret .= "<tr><td valign='bottom' align='right'><b>$ML{'.from'}</b></td><td>";
-    
+
     if ( $u->{'defaultpicid'} && !$u->is_suspended ) {
         my $userpic_obj = $u->userpic;
         $ret .= "<a href='" . $u->allpics_base . "'>";
         $ret .= $userpic_obj->imgtag;
         $ret .= "</a>";
     }
-    
+
     # show requester name + email
     {
         my $visemail = $email;
@@ -283,8 +281,20 @@ body<=
         $ret .= "$ML{'.cluster'}: <b>" . LJ::DB::get_cluster_description( $u->{clusterid} ) . "</b>; "
             if $u->{clusterid};
         $ret .= "$ML{'.dataversion'}: <b>$u->{dversion}</b>";
-        $ret .= "<br />$ML{'.scheme'}: <b>" . ($u->{schemepref} ? $u->{schemepref} : "default") . "</b>; ";
-        $ret .= "$ML{'.language'}: <b>" . ($u->{browselang} ? $u->{browselang} : "default") . "</b>";
+        $ret .= "<br />$ML{'.scheme'}: <b>" .
+                ( $u->{schemepref} ? $u->{schemepref} : "default" ) . "</b>";
+
+        if ( $u->is_personal ) {
+            # only personal accounts can upload images
+            my $media_usage = DW::Media->get_usage_for_user( $u );
+            my $media_quota = DW::Media->get_quota_for_user( $u );
+            my $megabytes  = sprintf( "%0.3f MB", $media_usage / 1024 / 1024 );
+            my $percentage = ( $media_quota != 0 )
+                ? sprintf( "%0.1f%%", $media_usage / $media_quota * 100 )
+                : $ML{'.noquota'};
+
+            $ret .= "<br />$ML{'.media'}: $megabytes ($percentage)";
+        }
 
         my $view_history = $remote && $remote->has_priv( 'historyview' );
         my $view_userlog = $remote && $remote->has_priv( 'canview', 'userlog' );
@@ -297,10 +307,11 @@ body<=
                 if $view_userlog;
         }
 
-        if ( $u->in_class( LJ::BetaFeatures->cap_name )
+        if ( %LJ::BETA_FEATURES
             && LJ::Support::has_any_support_priv( $remote ) ) {
             $ret .= "<br />$ML{'.betatesting'}: ";
-            $ret .= join ", ", $u->prop( LJ::BetaFeatures->prop_name );
+            my $betafeatures = join ", ", $u->prop( LJ::BetaFeatures->prop_name );
+            $ret .= $betafeatures || $ML{'.no-beta'};
         }
 
         $ret .= "</td></tr>\n";
@@ -407,7 +418,7 @@ body<=
         # special case: original request
         if ($le->{'type'} eq "req") {
             # insert support diagnostics from props
-            $message .= "<?hr?><strong>$ML{'.diagnostics'}:</strong> " . LJ::ehtml($props->{useragent}) if $props->{useragent};
+            $message .= "<?hr?><strong>$ML{'.diagnostics'}</strong> " . LJ::ehtml($props->{useragent}) if $props->{useragent};
 
             $ret .= "<div style='margin-top: 15px;'>\n";
             $ret .= "<b>$ML{'.original.request'}:</b><br />\n";
@@ -672,11 +683,11 @@ _code?>
 
     my $spid = $FORM{'id'}+0;
     my $ret;
-    
+
     $ret .= BML::ml('.see.preview', {preview_link=>"href='$LJ::SITEROOT/support/see_request?id=$spid&amp;find=prev'"});
     $ret .= BML::ml('.see.next', {next_link=>"href='$LJ::SITEROOT/support/see_request?id=$spid&amp;find=next'"});
-    
-    return $ret; 
+
+    return $ret;
 }
 _code?>
 <br>

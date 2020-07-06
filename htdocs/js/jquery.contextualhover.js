@@ -37,10 +37,12 @@ function _initUserhead(context) {
 }
 
 function _initIcons(context) {
-    var re = new RegExp( "^" + Site.iconprefix + "/\\d+\/\\d+$" );
-    $("img[src^='"+Site.iconprefix+"']",context).each(function() {
+    var old_icon_url = 'www\\.dreamwidth\\.org/userpic';
+    var url_prefix = "(^" + Site.iconprefix + "|" + old_icon_url + ")";
+    var re = new RegExp( url_prefix + "/\\d+\/\\d+$" );
+    $("img[src^='"+Site.iconprefix+"'],img[src*='"+old_icon_url+"']",context).each(function() {
         var $icon = $(this);
-        if (this.src.match(re)) {
+        if (!$icon.data("no-ctx") && this.src.match(re)) {
             $icon.contextualhover({ "icon_url": this.src, type: "icon" });
         }
     });
@@ -59,6 +61,7 @@ function _initIcons(context) {
         - if you move the mouse from the trigger to the contextual popup
         - as long as the mouse is over the tooltip
         - NOT if you move the mouse away from the trigger before the popup is fully visible
+        - NOT if you move the mouse away from the trigger before the ajax request is done
 
     disappears:
         - when you move the mouse over then out of the contextual popup
@@ -84,7 +87,6 @@ _create: function() {
         if ( parent.length > 0 )
             self.element = parent;
     }
-
     var trigger = self.element;
     trigger.addClass("ContextualPopup-trigger");
 
@@ -178,6 +180,7 @@ _create: function() {
         out: function(e) {
             var persist = trigger.data("popup-persist");
             if ( ! persist ) {
+                trigger.ajaxtip( "abort" );
                 trigger.ajaxtip( "close" );
             }
             trigger.removeData("popup-persist");
@@ -191,7 +194,7 @@ _addRelationStatus: function( string ) {
 
 _addAction: function( url, text, action ) {
     action = !! action ? ' data-dw-ctx-action="' + action + '"' : "";
-    this._actions_html.push( '<div><a href="' + url+ '"' + action + '>' + text + '</a></div>' );
+    this._actions_html.push( '<li><a href="' + url+ '"' + action + '>' + text + '</a></li>' );
 },
 _addText: function( text ) {
     this._actions_html.push( '<div>' + text + '</div>' );
@@ -282,11 +285,17 @@ _renderPopup: function() {
         if ( ! data.is_closed_membership || data.is_member ) {
             if ( data.is_member )
                 this._addAction( data.url_leavecomm, "Leave", "leave" );
+            else if ( data.is_invited )
+                this._addAction( data.url_acceptinvite, "Accept invitation", "accept");
             else
                 this._addAction( data.url_joincomm, "Join community", "join" );
         } else {
             this._addRelationStatus( "Community closed" );
         }
+    }
+
+    if ( ( data.is_person || data.is_comm ) && ! data.is_requester && data.can_receive_vgifts ) {
+        this._addAction( data.url_vgift, "Send virtual gift" );
     }
 
     if ( data.is_logged_in && ! data.is_requester ) {
@@ -307,25 +316,20 @@ _renderPopup: function() {
         }
     }
 
-    // FIXME: double-check this when vgifts come out
-    if ( ( data.is_person || data.is_comm ) && ! data.is_requester && data.can_receive_vgifts ) {
-        this._addAction( Site.siteroot + "/shop/vgift?to=" + data.username, "Send a virtual gift" );
-    }
-
-    if ( data.is_logged_in && ! data.is_requester && ! data.is_syndicated ) {
+    if ( data.is_logged_in && ! data.is_requester && ! data.is_syndicated && ! data.is_comm ) {
         if ( data.is_banned ) {
             this._addAction( Site.siteroot + "/manage/banusers",
-                data.is_comm ? "Unban community" : "Unban user", "setUnban" );
+                "Unban user", "setUnban" );
         } else {
             this._addAction( Site.siteroot + "/manage/banusers",
-                data.is_comm ? "Ban community" : "Ban user", "setBan" );
+                "Ban user", "setBan" );
             var $banlink = $("<a></a>", { href: Site.siteroot + "/manage/banusers" });
         }
     }
 
     var content = '<div class="Content">' +
                     '<div class="Relation">' + this._rel_html.join( "" ) + '</div>' +
-                    '<div class="Actions">' + this._actions_html.join("") + '</div>' +
+                    '<div class="Actions"><ul>' + this._actions_html.join("") + '</ul></div>' +
                   '</div>';
 
     this.element
@@ -362,6 +366,17 @@ _changeRelation: function($link) {
                 target: info.username,
                 action: action,
                 auth_token: info[action+"_authtoken"]
+            },
+
+            beforeSend: function ( jqxhr, data ) {
+                if ( action == "setBan" || action == "setUnban" ) {
+                    var username = info.display_name;
+                    var message = action == "setUnban" ? "Are you sure you wish to unban " + username + "?"
+                                                       : "Are you sure you wish to ban " + username + "?";
+                    if ( confirm( message ) ) {
+                        return action;
+                    } else { return false };
+                  };
             },
 
             success: function( data, status, jqxhr ) {

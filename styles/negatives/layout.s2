@@ -1,0 +1,1107 @@
+layerinfo type = "layout";
+layerinfo name = "Negatives";
+layerinfo redist_uniq = "negatives/layout";
+layerinfo author_name = "phoenix";
+layerinfo des = "Highly customisable div-based layout";
+layerinfo lang = "en";
+
+set layout_authors = [ { "name" => "phoenix", "type" => "user" } ];
+
+##===============================
+## Presentation
+##===============================
+
+propgroup presentation {
+    property use layout_type;
+    property use num_items_recent;
+    property use num_items_reading;
+    property use use_custom_friend_colors;
+    property use use_shared_pic;
+    property use use_journalstyle_entry_page;
+    property use margins_size;
+    property use margins_unit;
+    property use medium_breakpoint_width;
+    property use large_breakpoint_width;
+    property use custom_control_strip_colors;
+
+    property use reverse_sortorder_group;
+    property use reg_firstdayofweek;
+    property use tags_page_type;
+    property use num_items_icons;
+    property use icons_page_sort;
+
+    property use all_entrysubjects;
+    property use all_commentsubjects;
+    property use entry_datetime_format_group;
+    property use comment_datetime_format_group;
+    property use userpics_style_group;
+    property use userpics_position;
+    property use entry_metadata_position;
+    property use userlite_interaction_links;
+    property use entry_management_links;
+    property use comment_management_links;
+}
+
+set layout_type = "two-columns-right";
+set userpics_position = "right";
+set entry_management_links = "text";
+set comment_management_links = "text";
+set custom_colors_template = "%%new%% div.footer, %%new%% div.footer ul, %%new%% div.footer ul a {background-color: %%background%%} %%new%% {border: 5px solid %%background%%;} %%new%% div.footer a, %%new%% div.footer {color: %%foreground%%;}";
+
+##===============================
+## Colors
+##===============================
+
+propgroup colors {
+    property use color_page_background;
+    property use color_page_text;
+    property use color_page_title;
+    property use color_page_link;
+    property use color_page_link_active;
+    property use color_page_link_hover;
+    property use color_page_link_visited;
+
+    property use color_module_background;
+    property use color_module_text;
+    property use color_module_link;
+    property use color_module_link_active;
+    property use color_module_link_hover;
+    property use color_module_link_visited;
+    property use color_module_title;
+    property use color_module_border;
+
+    property use color_header_background;
+    property use color_header_link;
+    property use color_header_link_active;
+    property use color_header_link_hover;
+    property use color_header_link_visited;
+
+    property use color_footer_background;
+    property use color_footer_link;
+    property use color_footer_link_active;
+    property use color_footer_link_hover;
+    property use color_footer_link_visited;
+
+    property use color_entry_background;
+    property use color_entry_text;
+    property use color_entry_link;
+    property use color_entry_link_active;
+    property use color_entry_link_hover;
+    property use color_entry_link_visited;
+    property use color_entry_title;
+    property use color_entry_interaction_links_background;
+    property use color_entry_interaction_links;
+    property use color_entry_interaction_links_active;
+    property use color_entry_interaction_links_hover;
+    property use color_entry_interaction_links_visited;
+    property use color_entry_border;
+
+    property use control_strip_bgcolor;
+    property use control_strip_fgcolor;
+    property use control_strip_bordercolor;
+    property use control_strip_linkcolor;
+}
+
+##===============================
+## Fonts
+##===============================
+
+propgroup fonts {
+    property use font_base;
+    property use font_fallback;
+    property use font_base_size;
+    property use font_base_units;
+    property use font_journal_title;
+    property use font_journal_title_size;
+    property use font_journal_title_units;
+    property use font_journal_subtitle;
+    property use font_journal_subtitle_size;
+    property use font_journal_subtitle_units;
+    property use font_module_heading;
+    property use font_module_heading_units;
+    property use font_module_heading_size;
+    property use font_module_text;
+    property use font_module_text_size;
+    property use font_module_text_units;
+    property use font_entry_title;
+    property use font_entry_title_size;
+    property use font_entry_title_units;
+    property use font_comment_title;
+    property use font_comment_title_size;
+    property use font_comment_title_units;
+    property use font_sources;
+}
+
+set font_base = "Georgia";
+set font_fallback = "serif";
+set font_base_size = "1";
+set font_base_units = "em";
+set font_module_heading_size = "1.1";
+set font_module_heading_units = "em";
+set font_entry_title_size = "1.1";
+set font_entry_title_units = "em";
+
+##===============================
+## Images
+##================================
+
+propgroup images {
+    property use image_background_page_group;
+    property use image_background_module_group;
+    property use image_background_header_group;
+    property use image_background_header_height;
+    property use image_background_entry_group;
+}
+
+##===============================
+## Modules
+##===============================
+
+propgroup modules {
+    property use module_userprofile_group;
+    property use module_navlinks_group;
+    property use module_calendar_group;
+    property use module_links_group;
+    property use module_syndicate_group;
+    property use module_tags_group;
+    property use module_pagesummary_group;
+    property use module_active_group;
+    property use module_time_group;
+    property use module_poweredby_group;
+    property use module_customtext_group;
+    property use module_credit_group;
+    property use module_search_group;
+    property use module_cuttagcontrols_group;
+    property use module_subscriptionfilters_group;
+}
+
+set module_layout_sections = "none|(none)|one|Main Module Section|two|Header|three|Footer";
+
+set module_navlinks_section = "two";
+set module_calendar_section = "three";
+set module_calendar_opts_type = "horizontal";
+set module_time_section = "none";
+set module_poweredby_section = "one";
+
+##===============================
+## Text
+##===============================
+
+propgroup text {
+    property use text_module_userprofile;
+    property use text_module_links;
+    property use text_module_syndicate;
+    property use text_module_tags;
+    property use text_module_popular_tags;
+    property use text_module_pagesummary;
+    property use text_module_active_entries;
+    property use text_module_customtext;
+    property use text_module_customtext_url;
+    property use text_module_customtext_content;
+    property use text_module_credit;
+    property use text_module_search;
+    property use text_module_cuttagcontrols;
+    property use text_module_subscriptionfilters;
+
+    property use text_view_recent;
+    property use text_view_archive;
+    property use text_view_friends;
+    property use text_view_friends_comm;
+    property use text_view_friends_filter;
+    property use text_view_network;
+    property use text_view_tags;
+    property use text_view_memories;
+    property use text_view_userinfo;
+
+    property use text_entry_prev;
+    property use text_entry_next;
+    property use text_edit_entry;
+    property use text_edit_tags;
+    property use text_mem_add;
+    property use text_tell_friend;
+    property use text_watch_comments;
+    property use text_unwatch_comments;
+    property use text_permalink;
+
+    property use text_read_comments;
+    property use text_read_comments_friends;
+    property use text_read_comments_screened_visible;
+    property use text_read_comments_screened;
+    property use text_post_comment;
+    property use text_post_comment_friends;
+
+    property use text_meta_location;
+    property use text_meta_mood;
+    property use text_meta_music;
+    property use text_meta_xpost;
+    property use text_tags;
+
+    property use text_stickyentry_subject;
+
+    property use text_max_comments;
+    property use text_skiplinks_back;
+    property use text_skiplinks_forward;
+}
+
+##===============================
+## Custom CSS
+##===============================
+
+propgroup customcss {
+    property use external_stylesheet;
+    property use include_default_stylesheet;
+    property use linked_stylesheet;
+    property use custom_css;
+}
+
+#######################
+#Functions
+#######################
+
+########################
+#Initialize some properties with fallback values
+function prop_init {
+    if ( not defined $*color_entry_interaction_links_background ) {
+        $*color_entry_interaction_links_background = $*color_page_background;
+    }
+}
+
+########################
+#Prints the stylesheet
+function Page::print_default_stylesheet()
+{
+    var string medium_media_query = generate_medium_media_query();
+    var string large_media_query = generate_large_media_query();
+
+    var string page_background = generate_background_css($*image_background_page_url,$*image_background_page_repeat,$*image_background_page_position,$*color_page_background);
+    var string header_background = generate_background_css($*image_background_header_url, $*image_background_header_repeat, $*image_background_header_position, $*color_header_background);
+    var string footer_background = generate_background_css( "", "", "", $*color_footer_background );
+    var string entry_background = generate_background_css ($*image_background_entry_url, $*image_background_entry_repeat, $*image_background_entry_position,$*color_entry_background);
+    var string module_background = generate_background_css ($*image_background_module_url, $*image_background_module_repeat, $*image_background_module_position,$*color_module_background);
+    if ($*image_background_header_height > 0) {
+        $header_background = $header_background + "\n        height: " + $*image_background_header_height + "px;";
+    }
+    var string page_font = generate_font_css("", $*font_base, $*font_fallback, $*font_base_size, $*font_base_units);
+    var string journal_title_font = generate_font_css($*font_journal_title, $*font_base, $*font_fallback, $*font_journal_title_size, $*font_journal_title_units);
+    var string journal_subtitle_font = generate_font_css($*font_journal_subtitle, $*font_base, $*font_fallback, $*font_journal_subtitle_size, $*font_journal_subtitle_units);
+    var string entry_title_font = generate_font_css($*font_entry_title, $*font_base, $*font_fallback, $*font_entry_title_size, $*font_entry_title_units);
+    var string comment_title_font = generate_font_css($*font_comment_title, $*font_base, $*font_fallback, $*font_comment_title_size, $*font_comment_title_units);
+    var string module_font = generate_font_css($*font_module_text, $*font_base, $*font_fallback, $*font_module_text_size, $*font_module_text_units);
+    var string module_title_font = generate_font_css($*font_module_heading, $*font_base, $*font_fallback, $*font_module_heading_size, $*font_module_heading_units);
+
+    var string userpic_css = "";
+    if ($*userpics_position == "left") {
+        $userpic_css = """
+        .entry .userpic,
+        .comment .userpic {
+            float: left;
+            margin-right: 2px;
+        }
+        """;
+    }
+    elseif ($*userpics_position == "right") {
+        $userpic_css = """
+        .entry .userpic,
+        .comment .userpic {
+            float: right;
+        }
+        """;
+    }
+
+    print_custom_control_strip_css();
+
+    """
+    body {
+        margin: 0;
+        padding: 0;
+        $page_font
+        $page_background
+        color:$*color_page_text;
+        }
+
+    #canvas {
+        margin-left: $*margins_size$*margins_unit;
+        margin-right: $*margins_size$*margins_unit;
+        }
+
+    a {
+        text-decoration: none;
+        font-weight: bold;
+        color:  $*color_page_link;
+        outline: none;
+        }
+    a:visited {
+        color: $*color_page_link_visited;
+    }
+    a:hover {
+        color: $*color_page_link_hover;
+        }
+    a:active {
+        color: $*color_entry_link_active;
+        }
+    img, img a {
+        border: 0!important;
+        }
+    q { font-style: italic;
+        }
+    #header {
+        border-top: 0!important;
+        border-bottom: 5px double $*color_module_border;
+        color: $*color_page_title;
+        $header_background
+    }
+    #header h1 {
+        $journal_title_font
+        padding: 0 1.25em;
+    }
+    #header h2 {
+        $journal_subtitle_font
+        padding: 0 1.7em;
+    }
+    #header a {
+        color: $*color_header_link;
+    }
+    #header a:active {
+        color: $*color_header_link_active;
+    }
+    #header a:visited {
+        color: $*color_header_link_visited;
+    }
+    #header a:hover {
+        color: $*color_header_link_hover;
+    }
+    .module-section-two {
+    }
+    .module-section-three {
+        border-bottom: 0!important;
+        border-top: 5px double $*color_module_border;
+    }
+    #footer {
+        clear:both;
+        $footer_background;
+    }
+    #footer a {
+        color: $*color_footer_link;
+    }
+    #footer a:active {
+        color: $*color_footer_link_active;
+    }
+    #footer a:visited {
+        color: $*color_footer_link_visited;
+    }
+    #footer a:hover {
+        color: $*color_footer_link_hover;
+    }
+    #primary {
+        position: relative;
+        font-size: 0.9em;
+        padding: 10px;
+        padding-bottom: 5px;
+        border: 0px;
+        border-left:5px double $*color_module_border;
+        border-right:5px double $*color_module_border;
+        z-index: 10;
+        }
+    #secondary {
+        position: relative;
+        margin: 0px;
+        padding: 10px;
+        border: 0px;
+        padding-bottom: 10px;
+        font-size: 0.80em;
+        $module_background
+        color: $*color_module_text;
+        border-left: 5px double $*color_module_border;
+        border-right: 5px double $*color_module_border;
+        }
+
+    #secondary a {
+        color:$*color_module_link;
+        font-weight:normal;
+        padding-bottom:1px;
+    }
+    #secondary a:visited {
+        color:$*color_module_link_visited;
+    }
+    #secondary a:hover {
+        color:$*color_module_link_hover;
+    }
+    #secondary a:active {
+        color:$*color_module_link_active;
+    }
+    #secondary .module-header {
+        border-bottom:1px solid $*color_module_border;
+        font-weight:bold;
+        letter-spacing:.3em;
+    }
+    #secondary .module-header a {
+        color: $*color_module_title;
+    }
+
+    @media $medium_media_query {
+        .multiple-columns #secondary {
+            border: none;
+        }
+
+        .two-columns-right #secondary .module-header {
+            text-align: right;
+        }
+    }
+
+    .manage-link {
+        text-align: center;
+    }
+
+    .module {
+        letter-spacing:.3em;
+        padding: 0.5em 0;
+    }
+
+    .module h2 {
+        $module_title_font
+    }
+
+    .module-content {
+        $module_font
+    }
+
+    .module-tags_cloud li, .tags_cloud li {
+        display: inline;
+    }
+
+    .search-box {
+        max-width: 100%;
+    }
+
+	.search-form .search-box-item, 
+    .search-form .search-button-item {
+        display: block
+    }
+    .search-form .comment_search_checkbox_item {
+        display: inline
+    }
+
+    .entry, .entry-wrapper, .comment, .comment-wrapper {
+        min-height: 110px;
+        border:5px solid $*color_entry_border;
+        padding: 5px;
+        $entry_background;
+        color: $*color_entry_text;
+    }
+
+    .comment-wrapper {
+        min-width: 15em;
+    }
+
+    .comment-wrapper.partial , .partial .comment {
+        min-height: 0;
+    }
+
+    .comment-title {
+        $comment_title_font
+        margin: 0;
+        }
+
+    .no-subject .comment .comment-title {
+        background: none;
+        }
+
+    .partial .comment-title {
+        display: inline;
+        margin-right: .2em;
+    }
+
+    .partial .comment-poster:before {
+        content: "- ";
+    }
+    .entry a, .comment a {
+        color: $*color_entry_link;
+    }
+    .entry a:visited, .comment a:visited {
+        color: $*color_entry_link_visited;
+    }
+    .entry a:hover, .comment a:hover {
+        color: $*color_entry_link_hover;
+    }
+    .entry a:active, .comment a:active {
+        color: $*color_entry_link_active;
+    }
+    .tag { margin: 10px 0; }
+    .tag ul { display: inline; margin: 0; padding: 0; }
+    .tag li { display: inline; }
+    .bottomcomment, .comments-message {
+        border: 15px double $*color_entry_border;
+        padding: 5px;
+        margin-top: 5px;
+        background-color: $*color_entry_background;
+        color: $*color_entry_text;
+    }
+    .entry-wrapper .footer {
+        background-color: $*color_entry_interaction_links_background;
+    }
+    .comment-poster .anonymous {
+        font-weight: bold;
+    }
+    .comment-posted {
+        font-weight:bold;
+    }
+    .comment-management-links {
+        display: inline;
+        padding-left: 0;
+    }
+    .entry-title, .userlite-interaction-links.icon-links li,
+    .entry-management-links li, .entry-interaction-links li,
+    .comment-interaction-links li, .comment-management-links li {
+        display: inline;
+        padding-left: 0.5em;
+    }
+
+    .no-subject .entry .entry-title {
+        background: none;
+        padding-left: 0;
+    }
+
+    .entry-title a {
+        color: $*color_entry_title;
+    }
+    .entry-title a:hover {
+        color: $*color_entry_link_hover;
+    }
+
+    /* ensure comment content stretches out horizontally so it's readable */
+    .comment-content:before {
+        content: "";
+        display: block;
+        overflow: hidden;
+        width: 10em;
+    }
+    .comment-content { border-top: 1px transparent solid; } /* for firefox */
+
+    /* To prevent overlapping when icon's on the left */
+    /* and list is the first thing in content */
+    .entry-content li,
+    .comment-content li {
+        list-style-position: inside;
+        }
+
+    /* Constrain image dimensions.
+        Job 1: Don't trash the layout sideways.
+        Job 2: Limit height to fit inside the viewport. Having to scroll to see a
+          portrait of someone is nonsense.
+        Job 3: Defend the native aspect ratio.
+        Job 4: Respect the width/height HTML attributes for scaling down OR up
+          (within the limits of the container), but if they conflict with the aspect
+          ratio, treat them as maximums and let the aspect ratio win. */
+    .entry-content img, .comment-content img {
+        height: auto;
+        max-width: 100%;
+        max-height: 95vh;
+        object-fit: contain;
+        object-position: left;
+    }
+
+
+    .entry .footer,
+    .comment .footer {
+        clear: both;
+    }
+
+    .entry-management-links, .entry-management-links a,
+    .entry-interaction-links, .entry-interaction-links a,
+    .comment-interaction-links, .comment-interaction-links a{
+        background-color: $*color_entry_interaction_links_background;
+        color: $*color_entry_interaction_links;
+        padding: 0 0.5em;
+        font-weight: normal;
+        text-align: center;
+    }
+    .entry-management-links a:visited, .comment-management-links a:visited,
+    .entry-interaction-links a:visited, .comment-interaction-links a:visited{
+        color: $*color_entry_interaction_links_visited;
+     }
+    .entry-management-links a:hover, .comment-management-links a:hover,
+    .entry-interaction-links a:hover, .comment-interaction-links a:hover{
+         color: $*color_entry_interaction_links_hover;
+    }
+    .entry-management-links a:active, .comment-management-links a:active,
+    .entry-interaction-links a:active, .comment-interaction-links a:active{
+        color: $*color_entry_interaction_links_active;
+    }
+
+    .userlite-interaction-links.icon-links, .entry-management-links ul, .comment-management-links ul {
+        list-style: none;
+        margin-left: 0;
+        padding-left: 0;
+    }
+
+    .tags-container {
+        color: $*color_entry_text;
+        margin: 5px;
+        padding: 5px;
+        $entry_background;
+    }
+
+    .tags-container h2 {
+        font-weight: bold !important;
+        margin: 0 !important;
+        padding-bottom: 10px !important;
+        $entry_title_font
+    }
+
+    .tags-container .ljtaglist {
+        padding-bottom: 5px !important;
+    }
+
+    .tags-container a {
+        color: $*color_entry_link !important;
+    }
+    .tags-container a:visited {
+        color: $*color_entry_link_visited !important;
+    }
+    .tags-container a:hover {
+        color: $*color_entry_link_hover !important;
+    }
+    .tags-container a:active {
+        color: $*color_entry_link_active !important;
+    }
+
+    /*--- Icons Page ---*/
+
+    .icons-container {
+        color: $*color_entry_text;
+        margin: 5px;
+        padding: 5px;
+        $entry_background;
+        }
+
+    .icons-container h2 {
+        font-weight: bold !important;
+        margin: 0 !important;
+        padding-bottom: 10px !important;
+        $entry_title_font
+        }
+
+    .icons-container a {
+        color: $*color_entry_link !important;
+        }
+
+    .icons-container a:visited {
+        color: $*color_entry_link_visited !important;
+        }
+
+    .icons-container a:hover {
+        color: $*color_entry_link_hover !important;
+        }
+
+    .icons-container a:active {
+        color: $*color_entry_link_active !important;
+        }
+
+    .sorting-options ul {
+        padding-left: 0;
+        }
+
+    .sorting-options ul li {
+        display: inline;
+        }
+
+    .icons-container .icon {
+        margin: 1em 0;
+        }
+
+    .icon-image {
+        float: left;
+        clear: left;
+        margin-bottom: .25em;
+        min-width: 100px;
+        padding-right: 1em;
+        }
+
+    .icon-info {
+        min-height: 100px;
+        }
+
+    .icon-info span {
+        font-weight: bold;
+        }
+
+    .icon-info .default {
+        text-decoration: underline;
+        }
+
+    .icon-keywords ul {
+        display: inline;
+        margin: 0;
+        padding: 0;
+        }
+
+    .icon-keywords ul li {
+        display: inline;
+        }
+
+    .module-section-two .module,
+    .module-section-three .module {
+        padding-left: .5em;
+        padding-right: .5em;
+    }
+
+    .module-navlinks ul {
+        display: block;
+        padding: 0;
+    }
+    .module-navlinks ul, .module-navlinks li {
+        font-weight: bold;
+    }
+    .module-section-three .module-navlinks ul,
+    .module-section-three .module-navlinks li,
+    .module-section-two .module-navlinks ul,
+    .module-section-two .module-navlinks li {
+        display: inline;
+        padding: .2em 1em .2em .5em;
+    }
+    @media $medium_media_query {
+        .two-columns-left .module-section-two .module-navlinks {
+            text-align: right;
+        }
+    }
+    .module-section-one .module-navlinks {
+        clear: both;
+    }
+
+    .module ul {
+        list-style-position: inside;
+    }
+    .module-section-one ul { padding-left: 0.3em }
+    .navigation ul { padding-left: 0em; }
+    .navigation li { padding-left: 0.3em; display: inline; }
+    .datetime{
+        margin-bottom:10px;
+        font-style:italic;
+    }
+    .subject, .subject a, .subject a:visited, .subject a:hover, .subject a:active {
+        font-weight:bold;
+    }
+    .subject {
+        $entry_title_font
+    }
+
+    @media $medium_media_query {
+        .two-columns-right .module-section-one .module-userprofile .userpic {
+            text-align: right;
+        }
+    }
+
+    .module-section-two .module-calendar,
+    .module-section-three .module-calendar {
+        text-align: center;
+        font-size: 0.8em;
+        padding:5px;
+        margin: 0;
+    }
+    @media $medium_media_query {
+        .module-section-two .module-calendar,
+        .module-section-three .module-calendar {
+            margin: 0px 190px 0px 100px;
+        }
+    }
+    .module-calendar table {
+        letter-spacing: 0.2em;
+        text-align: center;
+    }
+    .module-calendar {
+        color: $*color_module_text;
+    }
+    .module-calendar a{
+        color: $*color_module_link;
+    }
+    .module-calendar a:hover{
+        color: $*color_module_link_hover;
+    }
+    /* wrap long content, particularly openid usernames */
+    .module-pagesummary .ljuser {
+        white-space: normal !important;
+    }
+    .module-pagesummary .module-content {
+        word-wrap: break-word;
+    }
+    .module-credit .category-title {
+        font-weight: bold;
+    }
+
+    .floatclear {
+        visibility: hidden;
+        clear: both;
+        height: 0;
+    }
+
+    textarea.textbox{
+        width: 100%;
+    }
+
+    .entry h3 { display: inline; }
+
+    .page-top {
+        font-size: .8em;
+        padding: 5px 1em 5px 5px;
+        text-align: right;
+    }
+
+    #primary,
+    #secondary {
+        margin: 0 5%;
+    }
+
+    @media $medium_media_query {
+        .multiple-columns #primary, .multiple-columns #secondary { margin: 0; }
+        .two-columns-left #primary { float: right;}
+        .two-columns-left #secondary { float: right; }
+        .two-columns-right #primary { float: left; }
+        .two-columns-right #secondary {float: left;}
+        .two-columns-left #primary { right: 10%; width: 70%; }
+        .two-columns-left #secondary { right: 10%; width: 15%; }
+        .two-columns-right #primary {left: 10%; width: 70%;}
+        .two-columns-right #secondary {left: 10%; width: 15%;}
+    }
+
+$userpic_css
+
+    """;
+}
+
+#Print_body
+function Page::print_entry (Entry e)
+{
+var string raquo = (not $*all_entrysubjects and $e.subject == "" and $.view != "month") ? "" : "&raquo;";
+    $e->print_wrapper_start();
+    print "<div class=\"header\">";
+    $e->print_userpic();
+    print "<div class=\"subject\">$raquo";
+            $e->print_metatypes();
+            $e->print_subject();
+        println "</div>";
+        print "<div class=\"datetime\">(";
+            $e->print_poster();
+            print " ";
+            $e->print_time();
+            print ")";
+        println "</div>";
+    println "</div>";
+    if ($*entry_metadata_position == "top") { $e->print_metadata(); }
+    $e->print_text();
+    if ($*entry_metadata_position == "bottom") { $e->print_metadata(); }
+    $e->print_tags();
+    println "<div class=\"footer\">";
+    $e->print_interaction_links( "topcomment" );
+    $e->print_management_links();
+    println "</div>";
+    $this->print_reply_container({"target" => "topcomment" });
+    $e->print_wrapper_end();
+}
+
+#######################################
+#Year Page
+function YearPage::print_body() {
+var YearMonth[] months = $*reverse_sortorder_year ? reverse $.months : $.months;
+
+    println "<div class=\"entry\">";
+
+        "<div class=\"subject\">";
+            $this->print_year_links();
+        println "</div>";
+
+        println "<center>";
+        foreach var YearMonth m ($months) {
+            $this->print_month($m);
+        }
+        println "</center>";
+
+    println "</div>";
+}
+
+function YearPage::print_month(YearMonth m) {
+    if (not $m.has_entries) { return; }
+    """<br /><div class="entry"><table summary="Monthly calendar with links to each day's entries" style="width: 100%; border-collapse: collapse;">\n
+       <tr><th class="comments" colspan="7" style="text-align: center;">""";
+    print $m->month_format();
+    """</th></tr>\n""";
+    foreach var int d (weekdays()) {
+        "<th>"+$*lang_dayname_short[$d]+"</th>\n";
+    }
+    "</tr>\n";
+    foreach var YearWeek w ($m.weeks) {
+        $w->print();
+    }
+    """<tr><td class="comments" colspan="7" style="text-align: center;">
+        &laquo; <a href="$m.url">$*text_view_month</a> &raquo;</td></tr>\n""";
+    "</table></div>";
+}
+
+
+
+function YearWeek::print() {
+    """<tr valign="top" style="height: 2em;">\n""";
+    if ($.pre_empty > 0) {
+        """<td class="emptyday" colspan="$.pre_empty">&nbsp;</td>\n""";
+       }
+    foreach var YearDay d ($.days) {
+        """<td class="entry" width="14%">\n""";
+        """<div style="text-align: right;">$d.day</div>\n""";
+        if ($d.num_entries > 0) {
+            """<div style="text-align: center;"><a href="$d.url">$d.num_entries</a></div>\n""";
+        }
+    """</td>\n""";
+    }
+    if ($.post_empty > 0) {
+        """<td colspan="$.post_empty">&nbsp;</td>\n""";
+    }
+    "</tr>";
+}
+
+function MonthPage::print_body {
+var MonthDay[] days = $*reverse_sortorder_month ? reverse $.days : $.days;
+
+    println "<div class=\"entry\">";
+    println "<div class=\"subject\">" + $.date->date_format($*lang_fmt_month_long) + "</div>";
+    "<form method='post' action='$.redir.url'><center>";
+    $.redir->print_hiddens();
+    if ($.prev_url != "") { "[<a href='$.prev_url'>&lt;&lt;&lt;</a>]\n"; }
+    if (size $.months > 1) {
+        "<select name='redir_key'>\n";
+        foreach var MonthEntryInfo mei ($.months)
+        {
+            var string sel;
+            if ($mei.date.year == $.date.year and $mei.date.month == $.date.month) {
+                $sel = " selected='selected'";
+            }
+            println "<option value='$mei.redir_key'$sel>" + $mei.date->date_format($*lang_fmt_month_long) + "</option>";
+        }
+        println "</select>\n<input type='submit' value='View' />";
+    }
+    if ($.next_url != "") { "\n[<a href='$.next_url'>&gt;&gt;&gt;</a>]\n"; }
+    "</center></form>";
+    foreach var MonthDay d ($days) {
+        if ($d.has_entries) {
+            println "<div class='subject'>";
+            println "<a href=\"$d.url\">" + lang_ordinal($d.day) + " " + $.date->date_format($*lang_fmt_month_long) + "</a></div>";
+            println "<div style='margin-left: 20px;'>";
+            $d->print_subjectlist();
+            println "</div>\n<br />\n";
+        }
+    }
+    println "</div>";
+}
+
+function DayPage::print_body() {
+var Entry[] entries = $*reverse_sortorder_day ? reverse $.entries : $.entries;
+
+    if (not $.has_entries) {
+        println $*text_noentries_day;
+    }
+    foreach var Entry e ($entries) {
+        $this->print_entry($e);
+    }
+}
+
+
+#####################################
+#Comment Links
+
+function EntryPage::print_comment (Comment c)
+{
+    $c->print_wrapper_start();
+    $c->print_userpic();
+    println "<div class='datetime'><a href='$c.permalink_url' title='Permalink'>";
+    $c->print_time();
+    println "</a>";
+     if ( $c.comment_posted ) {
+         print safe "<div class='comment-posted'>$*text_comment_posted</div>";
+     }
+    print "</div>";
+
+    if ($this.multiform_on)
+    {
+        """<span class="multiform-checkbox">""";
+        println "<label for='ljcomsel_$c.talkid'>$*text_multiform_check</label>";
+        $c->print_multiform_check();
+        "</span>";
+    }
+
+    $c->print_management_links();
+    println "<br />";
+
+    $c->print_metadata();
+
+    println "";
+
+    $c->print_poster();
+    $c->print_metatypes();
+
+    $c->print_subject();
+
+    println "<br />";
+
+    $c->print_text();
+    println "<div class=\"footer\">";
+        $c->print_interaction_links();
+    println "</div>";
+
+    $c->print_reply_container();
+    $c->print_wrapper_end();
+}
+
+####################################
+#Layout Frame
+function Page::print()
+{
+    println """<!DOCTYPE html>
+    <html lang="en">
+    <head>""";
+        $this->print_meta_tags();
+        $this->print_head();
+        $this->print_stylesheets();
+        $this->print_head_title();
+    println "</head>";
+
+        $this->print_wrapper_start();
+        $this->print_control_strip();
+        println "<div id=\"header\">";
+            $this->print_global_title();
+            $this->print_global_subtitle();
+            $this->print_module_section("two");
+        println "</div>";
+        if ($*layout_type == "one-column-split") {
+            println "<div id=\"secondary\">";
+                if ($this.view != "archive" and $this.view != "month"){
+                    println "<div id='page-navigation-top' class='page-navigation'>";
+                        $this->print_navigation();
+                    println "</div>";
+                }
+                $this->print_module_section("one");
+            println "</div>";
+        }
+        println "<div id=\"primary\">";
+            $this->print_body();
+            println "<div class=\"floatclear\">.</div>";
+        println "</div>";
+        if ($*layout_type != "one-column-split") {
+            println "<div id=\"secondary\">";
+                if ($this.view != "archive" and $this.view != "month"){
+                    println "<div id='page-navigation-top' class='page-navigation'>";
+                        $this->print_navigation();
+                    println "</div>";
+                }
+                $this->print_module_section("one");
+            println "</div>";
+        }
+        println "<div id=\"footer\">";
+        $this->print_module_section("three");
+        println "<div>";
+
+        println "<div id=\"body-footer\">";
+            print safe """<div class="page-top"><a href="#">$*text_page_top</a></div>""";
+        println "</div>";
+
+    $this->print_wrapper_end();
+    println "</html>";
+}
+

@@ -1,0 +1,51 @@
+############################################################################
+# base filename          layer type                  parent
+
+## Core S2 layers
+core1                    core                        -
+core2                    core                        -
+
+## Tabula Rasa-based styles
+s2layers-core2base.dat   INCLUDE
+
+## Styles not based on Tabula Rasa
+abstractia/layout        layout                      core2
+abstractia/themes        theme+                      abstractia/layout
+
+bases/layout             layout                      core2
+bases/themes             theme+                      bases/layout
+
+blanket/layout           layout                      core2
+blanket/themes           theme+                      blanket/layout
+
+brittle/layout           layout                      core2
+brittle/themes           theme+                      brittle/layout
+
+drifting/layout          layout                      core2
+drifting/themes          theme+                      drifting/layout
+
+easyread/layout          layout                      core2
+easyread/themes          theme+                      easyread/layout
+
+goldleaf/layout          layout                      core2
+goldleaf/themes          theme+                      goldleaf/layout
+
+negatives/layout         layout                      core2
+negatives/themes         theme+                      negatives/layout
+
+skittlishdreams/layout   layout                      core2
+skittlishdreams/themes   theme+                      skittlishdreams/layout
+
+venture/layout           layout                      core2
+venture/themes           theme+                      venture/layout
+
+zesty/layout             layout                      core2
+zesty/themes             theme+                      zesty/layout
+
+
+## System styles, can't be used by users
+siteviews/layout         layout                      core2
+siteviews/themes         theme+                      siteviews/layout
+
+sitefeeds/layout         layout(core2base/layout)    core2
+sitefeeds/themes         theme+                      sitefeeds/layout

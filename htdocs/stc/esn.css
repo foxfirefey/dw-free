@@ -257,17 +257,21 @@ span.Pages input {
     font-weight: bold;
 }
 .folders a.subs {
-    padding-left: 1em;
+    padding-left: 2em;
 }
 .folders .subs {
-    padding-left: 1em;
+    padding-left: 2em;
 }
 .folders a.subsubs {
-    padding-left: 2em;
+    padding-left: 3.5em;
 }
 
 
 /**** ESN AJAX ****/
+.track-dialog {  /* outer div */
+    max-width: 80%;
+}
+
 .trackdialog .track_title, .ippu .track_title {
     font-weight: bold;
     margin: 4px;

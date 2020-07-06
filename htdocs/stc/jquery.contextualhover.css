@@ -25,10 +25,22 @@
 }
 
 .ContextualPopup .Userpic {
+    border-style: solid;
+    border-width: 1px;
     float: right;
+    margin-left: 2px;
+    padding: 2px;
+}
+
+/* Don't add extra height at bottom of userpic box */
+.ContextualPopup .Userpic a {
+    display: block;
+    line-height: 0;
 }
 
 .ContextualPopup .Userpic img {
+    height: auto;
+    width: auto;
     max-height: 75px;
     max-width: 75px;
     width:expression(this.width > 75 ? "75px" : this.width); /*IE Max-width */
@@ -44,9 +56,15 @@
     font-weight: bold;
     font-size: 0.8em;
     line-height: 1.2;
-    margin-bottom: 1.2em;
+    margin-bottom: 1em;
 }
 
 .ContextualPopup .Actions {
     line-height: 1.4;
+}
+
+.ContextualPopup .Actions ul {
+    list-style: none;
+    margin: 0;
+    padding-left: .5em;
 }

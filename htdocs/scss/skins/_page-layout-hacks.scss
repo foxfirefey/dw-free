@@ -1,0 +1,45 @@
+#canvas {
+    padding-top: 1px;  /*to ensure margin*/
+
+    &.vertical-nav {
+        padding-bottom: 1px; /* to ensure margin*/
+    }
+}
+
+#page {
+    padding-top: 1px;  /*to ensure margin*/
+}
+
+#content ul li {
+    margin-left: 2em;
+    margin-bottom: 0.75em;
+}
+
+// don't add the bottom spacing for success links
+#content ul.successlinks li {
+    margin-bottom: 0;
+}
+
+#content ul ul {
+    margin-top: 0.75em;
+}
+
+#content dl dd {
+    margin-left: 1.5em;
+}
+
+/**
+ * Temporary hack to hide account links / userpics on small screens
+ */
+
+// TODO: fix this along with account links
+// should be revealable by a click rather than just gone
+#header-userpic, #header-search {
+    display: none;
+}
+
+@media #{$topbar-media-query} {
+    #header-userpic, #header-search {
+        display: inherit;
+    }
+}

@@ -1,12 +1,25 @@
-# -*-perl-*-
+# t/synsuck.t
+#
+# Test LJ::SynSuck.
+#
+# Authors:
+#      Afuna <coder.dw@afunamatata.com>
+#
+# Copyright (c) 2013 by Dreamwidth Studios, LLC.
+#
+# This program is free software; you may redistribute it and/or modify it under
+# the same terms as Perl itself.  For a copy of the license, please reference
+# 'perldoc perlartistic' or 'perldoc perlgpl'.
+#
+
 use strict;
+use warnings;
+
 use Test::More tests => 24;
 
-use lib "$ENV{LJHOME}/cgi-bin";
-BEGIN { require 'ljlib.pl'; }
+BEGIN { $LJ::_T_CONFIG = 1; require "$ENV{LJHOME}/cgi-bin/ljlib.pl"; }
 
 use LJ::SynSuck;
-
 
 sub err {
     local $Test::Builder::Level = $Test::Builder::Level + 1;
@@ -16,8 +29,8 @@ sub err {
     subtest "$test (expect err)" => sub {
         plan tests => 2;
 
-        my ( $ok, $rv ) = LJ::SynSuck::parse_items_from_feed( $content );
-        ok( ! $ok, "returned status is an error" );
+        my ( $ok, $rv ) = LJ::SynSuck::parse_items_from_feed($content);
+        ok( !$ok, "returned status is an error" );
         is( $rv->{type}, $type, $rv->{message} ? "$rv->{message}" : "(no response message)" );
     };
 }
@@ -37,9 +50,8 @@ sub success {
         die $rv->{message} unless $ok;
     };
 
-    return @{$rv->{items}};
-};
-
+    return @{ $rv->{items} };
+}
 
 note("Error");
 {
@@ -51,7 +63,7 @@ note("Error");
     </rss>
     };
 
-    err( $content, "parseerror", "Mismatched tags" );
+        err ( $content, "parseerror", "Mismatched tags" );
 }
 
 note("No items");
@@ -67,9 +79,8 @@ note("No items");
     </rss>
     };
 
-    err( $content, "noitems", "Empty feed" );
+        err ( $content, "noitems", "Empty feed" );
 }
-
 
 note("RSS pubDate - descending");
 {
@@ -112,7 +123,11 @@ note("RSS pubDate - descending");
     </rss>};
 
     my @items = success( $content, "Correct order from RSS pubDate (originally descending)" );
-    is_deeply( [ map {$_->{id}} @items ], [ 1, 2, 3 ], "Items from feed returned in correct order (originally in descending order)" );
+    is_deeply(
+        [ map { $_->{id} } @items ],
+        [ 1, 2, 3 ],
+        "Items from feed returned in correct order (originally in descending order)"
+    );
 }
 
 note("RSS pubDate - ascending");
@@ -155,10 +170,14 @@ note("RSS pubDate - ascending");
     </rss>};
 
     my @items = success( $content, "Correct order from RSS pubDate (originally ascending)" );
-    is_deeply( [ map {$_->{id}} @items ], [ 1, 2, 3 ], "Items from feed returned in correct order (originally in ascending order)" );
+    is_deeply(
+        [ map { $_->{id} } @items ],
+        [ 1, 2, 3 ],
+        "Items from feed returned in correct order (originally in ascending order)"
+    );
 }
 
-note( "Atom - descending" );
+note("Atom - descending");
 {
     my $content = q{<?xml version="1.0" encoding="UTF-8"?>
     <feed xmlns="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/elements/1.1/">
@@ -199,10 +218,14 @@ note( "Atom - descending" );
     </feed>};
 
     my @items = success( $content, "Correct order from Atom (originally descending)" );
-    is_deeply( [ map {$_->{id}} @items ], [ 1, 2, 3 ], "Items from feed returned in correct order (originally in descending order)" );
+    is_deeply(
+        [ map { $_->{id} } @items ],
+        [ 1, 2, 3 ],
+        "Items from feed returned in correct order (originally in descending order)"
+    );
 }
 
-note( "Atom - ascending" );
+note("Atom - ascending");
 {
     my $content = q{<?xml version="1.0" encoding="UTF-8"?>
     <feed xmlns="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/elements/1.1/">
@@ -244,7 +267,11 @@ note( "Atom - ascending" );
     </feed>};
 
     my @items = success( $content, "Correct order from Atom (originally ascending)" );
-    is_deeply( [ map {$_->{id}} @items ], [ 1, 2, 3 ], "Items from feed returned in correct order (originally in ascending order)" );
+    is_deeply(
+        [ map { $_->{id} } @items ],
+        [ 1, 2, 3 ],
+        "Items from feed returned in correct order (originally in ascending order)"
+    );
 }
 
 note("RSS dc:date - descending");
@@ -288,7 +315,11 @@ note("RSS dc:date - descending");
     </rss>};
 
     my @items = success( $content, "Correct order from RSS dc:date (originally descending)" );
-    is_deeply( [ map {$_->{id}} @items ], [ 1, 2, 3 ], "Items from feed returned in correct order (originally in descending order)" );
+    is_deeply(
+        [ map { $_->{id} } @items ],
+        [ 1, 2, 3 ],
+        "Items from feed returned in correct order (originally in descending order)"
+    );
 }
 
 note("RSS dc:date - ascending");
@@ -331,10 +362,14 @@ note("RSS dc:date - ascending");
     </rss>};
 
     my @items = success( $content, "Correct order from RSS dc:date (originally ascending)" );
-    is_deeply( [ map {$_->{id}} @items ], [ 1, 2, 3 ], "Items from feed returned in correct order (originally in ascending order)" );
+    is_deeply(
+        [ map { $_->{id} } @items ],
+        [ 1, 2, 3 ],
+        "Items from feed returned in correct order (originally in ascending order)"
+    );
 }
 
-note( "Without datestamp - descending" );
+note("Without datestamp - descending");
 {
     my $content = q{<?xml version="1.0" encoding="UTF-8"?>
     <feed xmlns="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/elements/1.1/">
@@ -369,10 +404,14 @@ note( "Without datestamp - descending" );
     </feed>};
 
     my @items = success( $content, "Correct order without datestamps (originally descending)" );
-    is_deeply( [ map {$_->{id}} @items ], [ 1, 2, 3 ], "Items from feed returned in correct order (originally without datestamps in descending order)" );
+    is_deeply(
+        [ map { $_->{id} } @items ],
+        [ 1, 2, 3 ],
+"Items from feed returned in correct order (originally without datestamps in descending order)"
+    );
 }
 
-note( "Without datestamp - ascending" );
+note("Without datestamp - ascending");
 {
     my $content = q{<?xml version="1.0" encoding="UTF-8"?>
     <feed xmlns="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/elements/1.1/">
@@ -408,11 +447,14 @@ note( "Without datestamp - ascending" );
     </feed>};
 
     my @items = success( $content, "Correct order without datestamps (originally ascending)" );
-    is_deeply( [ map {$_->{id}} @items ], [ 3, 2, 1 ], "Items from feed returned in what we guessed is the correct order (originally without datestamps in ascending order)" );
+    is_deeply(
+        [ map { $_->{id} } @items ],
+        [ 3, 2, 1 ],
+"Items from feed returned in what we guessed is the correct order (originally without datestamps in ascending order)"
+    );
 }
 
-
-note( "Active feed - too many items - descending" );
+note("Active feed - too many items - descending");
 {
     my $content = q {<?xml version="1.0" encoding="ISO-8859-1"?>
     <rss version="2.0">
@@ -453,10 +495,14 @@ note( "Active feed - too many items - descending" );
     </rss>};
 
     my @items = success( $content, "Latest two items in the feed", num_items => 2 );
-    is_deeply( [ map {$_->{id}} @items ], [ 2, 3 ], "Returned latest two items from feed (originally in descending order)" );
+    is_deeply(
+        [ map { $_->{id} } @items ],
+        [ 2, 3 ],
+        "Returned latest two items from feed (originally in descending order)"
+    );
 }
 
-note( "Active feed - too many items - ascending" );
+note("Active feed - too many items - ascending");
 {
     my $content = q {<?xml version="1.0" encoding="ISO-8859-1"?>
     <rss version="2.0">
@@ -496,10 +542,14 @@ note( "Active feed - too many items - ascending" );
     </rss>};
 
     my @items = success( $content, "Latest two items in the feed", num_items => 2 );
-    is_deeply( [ map {$_->{id}} @items ], [ 2, 3 ], "Returned latest two items from feed (originally in ascending order)" );
+    is_deeply(
+        [ map { $_->{id} } @items ],
+        [ 2, 3 ],
+        "Returned latest two items from feed (originally in ascending order)"
+    );
 }
 
-note( "Active feed - too many items - no datestamp ascending" );
+note("Active feed - too many items - no datestamp ascending");
 {
     my $content = q {<?xml version="1.0" encoding="ISO-8859-1"?>
     <rss version="2.0">
@@ -536,5 +586,9 @@ note( "Active feed - too many items - no datestamp ascending" );
     </rss>};
 
     my @items = success( $content, "Latest two items in the feed (guessed)", num_items => 2 );
-    is_deeply( [ map {$_->{id}} @items ], [ 2, 1 ], "Returned what we guessed are the latest two items from feed (originally without datestamps in ascending order)" );
+    is_deeply(
+        [ map { $_->{id} } @items ],
+        [ 2, 1 ],
+"Returned what we guessed are the latest two items from feed (originally without datestamps in ascending order)"
+    );
 }

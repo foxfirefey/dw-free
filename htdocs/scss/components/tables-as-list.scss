@@ -1,0 +1,32 @@
+/* rough way to make certain tables display as a list on smaller screens */
+
+@import "foundation/base";
+
+.table-as-list {
+    thead {
+        display: none;
+    }
+
+    tbody {
+        td, th {
+            display: block;
+        }
+    }
+    ul {
+        margin: 0;
+    }
+}
+
+@media #{$small} {
+    .table-as-list {
+        thead {
+            display: table-header-group;
+        }
+
+        tbody {
+            td, th {
+                display: table-cell;
+            }
+        }
+    }
+}

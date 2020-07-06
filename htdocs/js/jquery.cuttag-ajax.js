@@ -4,6 +4,38 @@ var isExpandingAll = 0;
 
 var loadPending = 0;
 
+// Test for SVG support from
+// http://stackoverflow.com/questions/654112/how-do-you-detect-support-for-vml-or-svg-in-a-browser
+// If we expand SVG usage on the site this function should get
+// pulled out of this file.
+function supportsSVG() {
+            return !!document.createElementNS 
+         && !!document.createElementNS('http://www.w3.org/2000/svg', "svg").createSVGRect
+         // FF 3.6.8 supports SVG but not inline
+         && !isOldFirefox();
+}
+
+function isOldFirefox () {
+           // check for 3.6.8 or older (hardware limitations cap some users here)
+           return !!(jQuery.browser.mozilla && jQuery.browser.version < '1.9.3')
+}
+
+if ( supportsSVG() ) {
+        var collapse_img        = "/collapse.svg";
+        var expand_img          = "/expand.svg";
+        var collapseall_img     = "/collapseAll.svg";
+        var expandall_img       = "/expandAll.svg";
+        var ajaxloader_img      = "/ajax-loader.gif";
+        var collapseend_img     = "/collapse-end.svg";
+} else {
+        var collapse_img        = "/collapse.gif";
+        var expand_img          = "/expand.gif";
+        var collapseall_img     = "/collapseAll.gif";
+        var expandall_img       = "/expandAll.gif";
+        var ajaxloader_img      = "/ajax-loader.gif";
+        var collapseend_img     = "/collapse-end.gif";
+}
+
 $.widget("dw.cuttag", {
     options: {
         journal: undefined,
@@ -49,7 +81,7 @@ $.widget("dw.cuttag", {
             "div": theDiv
         };
 
-        self._setArrow("/collapse.gif", self.config.text.expand);
+        self._setArrow(collapse_img, self.config.text.expand);
 
         self.element.append(a);
 
@@ -80,7 +112,7 @@ $.widget("dw.cuttag", {
             return;
 
         loadPending++;
-        self._setArrow("/ajax-loader.gif", self.config.text.loading);
+        self._setArrow(ajaxloader_img, self.config.text.loading);
         $.ajax({
             "method": "GET",
             "url": self.ajaxUrl,
@@ -96,7 +128,7 @@ $.widget("dw.cuttag", {
         if ( ! this.isOpen() )
             return;
         this.tag.div.removeClass("cuttag-open");
-        this._setArrow("/collapse.gif", this.config.text.expand);
+        this._setArrow(collapse_img, this.config.text.expand);
 
         this.tag.div.empty();
         this.tag.div.css("display","none");
@@ -108,15 +140,16 @@ $.widget("dw.cuttag", {
         i.attr("src",Site.imgprefix + path);
         i.attr("alt",str);
         i.attr("title",str);
+        i.attr("style","max-width: 100%; width: 1.0em; padding: 0.2em;");
     },
     handleError: function(error) {
-        this._setArrow("/collapse.gif", this.config.text.expand);
+        this._setArrow(collapse_img, this.config.text.expand);
         alert(error);
     },
     replaceCutTag: function(resObj) {
         var self = this;
         if ( resObj.error ) {
-            self._setArrow("/collapse.gif", self.config.text.expand);
+            self._setArrow(collapse_img, self.config.text.expand);
         } else {
             var replaceDiv = self.tag.div;
             replaceDiv.html(resObj.text)
@@ -128,8 +161,8 @@ $.widget("dw.cuttag", {
                 "class": "cuttag-action cuttag-action-after"
             });
             var img = $("<img>",{
-                style: "border: 0;",
-                src: Site.imgprefix + "/collapse-end.gif",
+                style: "border: 0; max-width: 100%; width: 1.0em; padding: 0.2em;",
+                src: Site.imgprefix + collapseend_img,
                 "aria-controls": 'div-cuttag_' + self.identifier,
                 alt: self.config.text.collapse,
                 title: self.config.text.collapse
@@ -145,7 +178,7 @@ $.widget("dw.cuttag", {
                 self.toggle();
             });
 
-            self._setArrow("/expand.gif", self.config.text.collapse);
+            self._setArrow(expand_img, self.config.text.collapse);
 
             replaceDiv.trigger( "updatedcontent.entry" );
             $.dw.cuttag.initLinks(replaceDiv);
@@ -175,7 +208,7 @@ $.widget("dw.cuttag_controls", {
     },
     _create: function() {
         var self = this;
-        var cuttags = $("span.cuttag");
+        var cuttags = $("span.cuttag[id]");
 
         if ( cuttags.size() == 0 ) return;
 
@@ -185,7 +218,7 @@ $.widget("dw.cuttag_controls", {
         var self = this;
         self.element.empty();
 
-        var cuttags = $("span.cuttag");
+        var cuttags = $("span.cuttag[id]");
 
         var aria_open = "";
         var aria_closed = "";
@@ -202,12 +235,12 @@ $.widget("dw.cuttag_controls", {
         var el_exp = $("<img>", {
             alt: self.config.text.expand,
             title: self.config.text.expand,
-            src: Site.imgprefix + "/collapseAll.gif",
+            src: Site.imgprefix + collapseall_img,
             style: aria_closed ? self.config.image_style.enabled : self.config.image_style.disabled
         });
 
         if ( isExpandingAll ) {
-            el_exp.attr("src",Site.imgprefix + "/ajax-loader.gif");
+            el_exp.attr("src",Site.imgprefix + ajaxloader_img);
             el_exp.attr("style",self.config.image_style.enabled);
             el_exp.attr("title",self.config.text.expanding);
             el_exp.attr("alt",self.config.text.expanding);
@@ -222,7 +255,7 @@ $.widget("dw.cuttag_controls", {
 
             a_exp.click(function() {
                 isExpandingAll = 1;
-                var cuttags = $("span.cuttag");
+                var cuttags = $("span.cuttag[id]");
                 cuttags.each(function (_,element) {
                     $(element).data("dw-cuttag").open();
                 });
@@ -233,7 +266,7 @@ $.widget("dw.cuttag_controls", {
         var el_col = $("<img>", {
             alt: self.config.text.collapse,
             title: self.config.text.collapse,
-            src: Site.imgprefix + "/expandAll.gif",
+            src: Site.imgprefix + expandall_img,
             style: aria_open ? self.config.image_style.enabled : self.config.image_style.disabled
         });
         if ( aria_open ) {
@@ -275,7 +308,7 @@ $.extend( $.dw.cuttag_controls, {
 
 $.extend( $.dw.cuttag, {
     initLinks: function(context) {
-        var cuttags = $("span.cuttag",context);
+        var cuttags = $("span.cuttag[id]",context);
 
         cuttags.each(function (_,element) {
             $(element).cuttag();

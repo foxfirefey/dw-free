@@ -32,7 +32,7 @@ ENTRYFORMCSS<=
 
 BADINPUT<=
 <?h1 <?_ml bml.badinput.head _ml?> h1?>
-<?p <?_ml bml.badinput.body _ml?> p?>
+<?p <?_ml bml.badinput.body1 _ml?> p?>
 <=BADINPUT
 
 REQUIREPOST=><?_ml bml.requirepost _ml?>
@@ -79,7 +79,7 @@ LOAD_PAGE_INFO<=
                   { 'name' => 'Your Entries',
                 'uri' => '/editjournal', },
                   { 'name' => 'Your Pictures',
-                'uri' => '/editicons', },
+                'uri' => '/manage/icons', },
                   { 'name' => 'Your Password',
                 'uri' => '/changepassword', },
                   ],
@@ -250,33 +250,6 @@ _code?>
 </html>
 <=PAGE
 
-BREADCRUMBS<=
-{Fp}<?_code
-    # where are we
-    my @crumbs = LJ::get_crumb_path();
-    return unless @crumbs;
-    my @ret;
-    my $count = 0;
-    foreach my $crumb (@crumbs) {
-        # put crumbs together
-        next unless $crumb->[3]; # no blank crumbs
-        if ($crumb->[3] eq 'dynamic') {
-            # dynamic
-            unshift @ret, "<b>$crumb->[0]</b>";
-            $count++;
-        } else {
-            # non-dynamic
-            unshift @ret, $count++ == 0 ?
-                "<b>$ML{'crumb.'.$crumb->[3]}</b>" :
-                $crumb->[1] ne '' ?
-                    "<a href=\"$crumb->[1]\">$ML{'crumb.'.$crumb->[3]}</a>" :
-                    "$ML{'crumb.'.$crumb->[3]}";
-        }
-    }
-    return "<div id='ljbreadcrumbs'>" . join(" : ", @ret) . "</div>";
-_code?>
-<=BREADCRUMBS
-
 # Dreamwidth menu structure
 menunav<=
 <?_code
@@ -285,7 +258,7 @@ menunav<=
 
     my $ret;
 
-    $ret .= "<ul>\n";
+    $ret .= "<ul class="left">\n";
 
     my $nav_links = DW::Logic::MenuNav->get_menu_navigation;   # defaults to remote
 
@@ -297,8 +270,8 @@ menunav<=
             push @displayed, "<li class='subnav'><a href='$item->{url}'>" . BML::ml( "$item->{text}", $item->{text_opts} ) . "</a></li>" if $item->{display};
         }
         if ( @displayed ) {   # only display a top-level menu if any of its items are displayed
-            $ret .= "<li id='${cat}_topnav' class='topnav'><a href='$LJ::SITEROOT/nav/$cat'>$ML{\"menunav.$cat\"}</a>\n";
-            $ret .= "<ul id='${cat}_subnav' class='subnav_container'>\n";
+            $ret .= "<li id='${cat}_topnav' class='topnav has-dropdown'><a href='$LJ::SITEROOT/nav/$cat'>$ML{\"menunav.$cat\"}</a>\n";
+            $ret .= "<ul id='${cat}_subnav' class='subnav_container dropdown'>\n";
             $ret .= join( "\n", @displayed ) . "\n";
             $ret .= "</ul>\n";
             $ret .= "</li>\n";

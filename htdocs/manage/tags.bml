@@ -19,8 +19,6 @@ body<=
     use strict;
     use vars qw(%POST %GET $headextra);
 
-    LJ::set_active_crumb('managetags');
-
     return "<?h1 $ML{'Error'} h1?><?p $ML{'/edittags.bml.disabled'} p?>"
         unless LJ::is_enabled('tags');
 
@@ -370,7 +368,7 @@ HEAD
 
     $ret .= "<div class='tagsec'> "
         . LJ::html_select({ name => 'control_level', selected => $security->{control} }, @control_groups)
-        . " $ML{'.setting.desc.control'} </div>";
+        . " $ML{'.setting.desc.control2'} </div>";
 
     $ret .= "<div class='tagsec'>"
             . LJ::html_select({ name => 'add_level', selected => $security->{add} }, @add_groups)

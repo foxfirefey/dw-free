@@ -64,6 +64,9 @@ _c?>
         $event =~ s/<poll-placeholder>/$poll_preview->()/eg;
     }
 
+    # existing polls
+    LJ::Poll->expand_entry( \$event );
+
     # parse out embed tags from the RTE
     $event = LJ::EmbedModule->transform_rte_post($event);
     # do first expand_embedded pass with the preview flag to extract
@@ -77,15 +80,15 @@ _c?>
     # expand the embedded content for reals
     LJ::EmbedModule->expand_entry($u, \$event, preview => 1,);
 
-    my $r = BML::get_request();
+    my $apache_r = BML::get_request();
     my $ctx;
 
     # Get the preview message to hand to S2 or use in $ret.
     my $preview_warn_text = $ML{".entry.preview_warn_text"};
 
     if ($u && $up) {
-        $r->notes->{_journal} = $u->{user};
-        $r->notes->{journalid} = $u->{userid};
+        $apache_r->notes->{_journal} = $u->{user};
+        $apache_r->notes->{journalid} = $u->{userid};
 
         ### Load necessary props
         my @needed_props = qw( stylesys s2_style url urlname
@@ -226,7 +229,7 @@ _c?>
     } else {
         $LJ::S2::ret_ref = \$ret;
         my $opts;
-        $opts->{'r'} = $r;
+        $opts->{'r'} = $apache_r;
 
         $u->{'_s2styleid'} = $styleid + 0;
         $u->{'_journalbase'} = $u->journal_base;
@@ -297,9 +300,8 @@ _c?>
         if ($u->should_block_robots) {
             $p->{'head_content'} .= LJ::robot_meta_tags();
         }
-        if ($LJ::UNICODE) {
-            $p->{'head_content'} .= '<meta http-equiv="Content-Type" content="text/html; charset='.$opts->{'saycharset'}."\" />\n";
-        }
+
+        $p->{'head_content'} .= '<meta http-equiv="Content-Type" content="text/html; charset='.$opts->{'saycharset'}."\" />\n";
 
         # Don't show the navigation strip or invisible content
         $p->{'head_content'} .= qq{
@@ -319,6 +321,24 @@ _c?>
                 border: 1px solid #c1272c;
                 background-color: #ffd8d8;
                 color: #000;
+            }
+            /* lj_embedcontent styling copied from lj_base.css */
+            .lj_embedcontent-wrapper {
+                overflow: hidden;
+            }
+            .lj_embedcontent-ratio {
+                position: relative;
+                height: 0;
+                /* this technique requires a padding top, but we
+                   calculate that dynamically and put it inline */
+            }
+            iframe.lj_embedcontent {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                border: 0;
             }
             </style>
         };
@@ -346,7 +366,7 @@ _c?>
             '_url_of' => sub { return "#"; },
         });
 
-        LJ::S2::s2_run($r, $ctx, $opts, "EntryPage::print()", $p);
+        LJ::S2::s2_run($apache_r, $ctx, $opts, "EntryPage::print()", $p);
         BML::ebml(\$ret);
     }
     return $ret;

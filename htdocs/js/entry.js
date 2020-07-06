@@ -63,19 +63,19 @@ function customboxes (e) {
     if (! e) var e = window.event;
     if (! document.getElementById) return false;
 
-    
+
     f = document.updateForm;
     if (! f) return false;
-    
+
     var custom_boxes = $('custom_boxes');
     if (! custom_boxes) return false;
-    
+
     if (f.security.selectedIndex != 3) {
         custom_boxes.style.display = 'none';
         return false;
     }
 
-    var altlogin_username = $('altlogin_username');    
+    var altlogin_username = $('altlogin_username');
     if (altlogin_username != undefined && (altlogin_username.style.display == 'table-row' ||
                                            altlogin_username.style.display == 'block')) {
         f.security.selectedIndex = 0;
@@ -84,7 +84,7 @@ function customboxes (e) {
     } else {
         custom_boxes.style.display = 'block';
     }
-    
+
     if (e) {
         e.cancelBubble = true;
         if (e.stopPropagation) e.stopPropagation();
@@ -98,15 +98,15 @@ function altlogin (e) {
 
     if (! e) var e = window.event;
     if (! document.getElementById) return false;
-    
+
     var altlogin_wrapper = $('altlogin_wrapper');
     if (! altlogin_wrapper) return false;
     altlogin_wrapper.style.display = 'block';
-   
+
     var remotelogin = $('remotelogin');
     if (! remotelogin) return false;
     remotelogin.style.display = 'none';
-    
+
     var usejournal_list = $('usejournal_list');
     if (usejournal_list) {
         usejournal_list.style.display = 'none';
@@ -145,7 +145,7 @@ function altlogin (e) {
     f = document.updateForm;
     if (! f) return false;
     f.action = 'update?altlogin=1';
-    
+
     if (f.security) {
         f.security.options[3] = null;
         f.security.selectedIndex = 0;
@@ -160,7 +160,7 @@ function altlogin (e) {
         if (e.stopPropagation) e.stopPropagation();
     }
 
-    return false;    
+    return false;
 }
 
 function insertFormHints() {
@@ -185,7 +185,7 @@ function mood_preview() {
     if (moodid == "") {
         if ($('mood_preview')) {
             moodPreview = $('mood_preview');
-            moodPreview.innerHTML = '';         
+            moodPreview.innerHTML = '';
         }
         return false
     } else {
@@ -197,7 +197,7 @@ function mood_preview() {
             var moodPreview = document.createElement('span');
             moodPreview.id = 'mood_preview';
             wrapper.appendChild(moodPreview);
-        } 
+        }
         var moodPreviewImage = document.createElement('img');
         moodPreviewImage.id = 'mood_image_preview';
         moodPreviewImage.src = moodpics[moodid];
@@ -226,8 +226,8 @@ function entryPreview(entryForm) {
     f.target='preview';
     window.open('','preview','width=760,height=600,resizable=yes,status=yes,toolbar=no,location=no,menubar=no,scrollbars=yes');
     f.submit();
-    f.action=action; 
-    f.target='_self'; 
+    f.action=action;
+    f.target='_self';
     return false;
 }
 
@@ -272,7 +272,7 @@ function setColumns(number) {
 
     // hide original list
     listObj.style.display = 'none';
-    
+
     // determine number of columns
     if (number) {   // if it's passed as an argument
         var columns = number;
@@ -285,9 +285,9 @@ function setColumns(number) {
 
     // set the class of list-wrapper to reflect the number of columns
     if ((theList.length / perColumn) <= (columns - 1)) {
-        // If the number of items divided by the calculated items per column is less than 
-        // the number of columns minus one, the number of columns will be adjusted down by one. 
-        // In other words, if you have 9 items and try to break them into 4 columns, the last 
+        // If the number of items divided by the calculated items per column is less than
+        // the number of columns minus one, the number of columns will be adjusted down by one.
+        // In other words, if you have 9 items and try to break them into 4 columns, the last
         // column would be empty, so I've made the adjustment automatic.
         columns = columns - 1;
     }
@@ -321,12 +321,12 @@ function settime( dateUpdatedText, fromButton ) {
         if (n < 10) { return "0" + n; }
         else { return n; }
     }
-    
+
     now = new Date();
     if (! now) return false;
     f = document.updateForm;
     if (! f) return false;
-    
+
     f.date_ymd_yyyy.value = now.getYear() < 1900 ? now.getYear() + 1900 : now.getYear();
     f.date_ymd_mm.selectedIndex = twodigit(now.getMonth());
     f.date_ymd_dd.value = twodigit(now.getDate());
@@ -335,8 +335,8 @@ function settime( dateUpdatedText, fromButton ) {
 
     f.date_diff.value = 1;
 
-    var mNames = new Array("January", "February", "March", 
-        "April", "May", "June", "July", "August", "September", 
+    var mNames = new Array("January", "February", "March",
+        "April", "May", "June", "July", "August", "September",
         "October", "November", "December");
     var currentdate = document.getElementById('currentdate-date');
     var cMonth = now.getMonth();
@@ -364,7 +364,7 @@ function getUserTags(defaultjournal) {
     }
 
     HTTPReq.getJSON({
-        url: "/tools/endpoints/gettags?user=" + user,
+        url: "/__rpc_gettags?user=" + user,
         method: "GET",
         onData: function (data) {
             // disable any InputComplete objects that are already on the tag field
@@ -402,7 +402,7 @@ function changeSecurityOptions(defaultjournal) {
     }
 
     HTTPReq.getJSON({
-        url: "/tools/endpoints/getsecurityoptions?user=" + user,
+        url: "/__rpc_getsecurityoptions?user=" + user,
         method: "GET",
         onData: function (data) {
             if ($('security')) {
@@ -497,7 +497,7 @@ InOb.onUpload = function (surl, furl, swidth, sheight) {
 };
 
 
-InOb.onInsURL = function (url, width, height) {
+InOb.onInsURL = function (url, width, height, alttext) {
         var ta = $("updateForm");
         var fail = function (msg) {
             alert("FAIL: " + msg);
@@ -506,10 +506,12 @@ InOb.onInsURL = function (url, width, height) {
         if (! ta) return fail("no updateform");
         var w = '';
         var h = '';
+        var alt = '';
         if (width > 0) w = " width='" + width + "'";
         if (height > 0) h = " height='" + height + "'";
+        if (alttext.length > 0) alt = " alt='" + alttext + "'";
         ta = ta.event;
-        ta.value = ta.value + "\n<img src=\"" + url + "\"" + w + h + " />";
+        ta.value = ta.value + "\n<img src=\"" + url + "\"" + w + h + alt + " />";
         return true;
 };
 
@@ -528,6 +530,10 @@ function onInsertObject (include) {
     iframe.style.border = "0";
     iframe.style.backgroundColor = "#fff";
     iframe.style.overflow = "hidden";
+    // move the keyboard focus to the dialog
+    iframe.tabIndex = -1;
+    // wai-aria support
+    iframe.role = 'dialog';
 
     //iframe.src = include;
     iframe.innerHTML = "<iframe id='popupsIframe' style='border:none' frameborder='0' width='100%' height='100%' src='" + include + "'></iframe>";
@@ -536,6 +542,8 @@ function onInsertObject (include) {
     currentPopup = iframe;
     setTimeout(function () { document.getElementById('popupsIframe').setAttribute('src', include); }, 500);
     InOb.smallCenter();
+    // move the keyboard focus to the dialog
+    iframe.focus();
 }
 // the select's onchange:
 InOb.handleInsertSelect = function () {
@@ -562,8 +570,8 @@ InOb.handleInsertSelect = function () {
 };
 
 entry_insert_embed = function (cb) {
-    var prompt = "Add media from other websites by copying and pasting their embed code here. ";
-    LJ_IPPU.textPrompt("Insert Embedded Content", prompt, cb);
+    var prompt = window.parent.FCKLang.EmbedContents;
+    LJ_IPPU.textPrompt(window.parent.FCKLang.EmbedPrompt, prompt, cb);
 };
 
 InOb.handleInsertEmbed = function () {
@@ -580,12 +588,6 @@ InOb.handleInsertImage = function () {
     include = '/imgupload';
     onInsertObject(include);
     return true;
-}
-InOb.handleInsertVideo = function() {
-    var videoUrl = prompt('Please enter a video URL:');
-    var draft = $('draft');
-    var video = "<site-template name=\"video\">" + videoUrl + "</site-template>";
-    draft.value = draft.value + video;
 }
 
 InOb.onClosePopup = function () {
@@ -612,11 +614,8 @@ InOb.setupIframeHandlers = function () {
     if (el) el.onclick = function () { return InOb.selectRadio("fromfile"); };
     el = ifw.document.getElementById("fromfileentry");
     if (el) el.onclick = el.onchange = function () { return InOb.selectRadio("fromfile"); };
-    el = ifw.document.getElementById("fromfb");
-    if (el) el.onclick = function () { return InOb.selectRadio("fromfb"); };
     el = ifw.document.getElementById("btnPrev");
     if (el) el.onclick = InOb.onButtonPrevious;
-
 };
 
 InOb.selectRadio = function (which) {
@@ -656,11 +655,6 @@ InOb.selectRadio = function (which) {
         fromfile.focus();
     }
 
-    else if (which == "fromfb") {
-        submit.value = "Next -->";  // &#x2192 is a right arrow
-        // fromfile.focus();
-    }
-
     return true;
 };
 
@@ -673,13 +667,16 @@ InOb.popid = function (id) {
 InOb.onSubmit = function () {
     var fileradio = InOb.popid('fromfile');
     var urlradio  = InOb.popid('fromurl');
-    var fbradio   = InOb.popid('fromfb');
 
     var form = InOb.popid('insobjform');
     if (! form) return InOb.fail('no form');
 
     var div_err = InOb.popid('img_error');
-    if (div_err) { div_err.style.display = 'block'; }
+    if (div_err) {
+            div_err.style.display = 'block';
+            // add wai-aria roles
+            div_err.setAttribute("role", "alert");
+    }
     if (! div_err) return InOb.fail('Unable to get error div');
 
     var setEnc = function (vl) {
@@ -712,11 +709,6 @@ InOb.onSubmit = function () {
         return true;
     }
 
-    if (fbradio && fbradio.checked) {
-        InOb.fotobilderStepOne();
-        return false;
-    }
-
     alert('unknown radio button checked');
     return false;
 };
@@ -735,40 +727,6 @@ InOb.showSelectorPage = function () {
     var div_err = InOb.popid('img_error');
     if (div_err) { div_err.style.display = 'none'; }
 };
-
-InOb.fotobilderStepOne = function () {
-    InOb.fullCenter();
-    var div_if = InOb.popid("img_iframe_holder");
-    var windims = DOM.getClientDimensions();
-    DOM.setHeight(div_if, windims.y - 300);
-    var div_fw = InOb.popid("img_fromwhere");
-    div_fw.style.display = "none";
-    div_if.style.display = "block";
-    var url = currentPopupWindow.fbroot + "/getgals";
-
-    var h = windims.y - 350;
-    div_if.innerHTML = "<iframe id='fbstepframe' src=\"" + url + "\" height=\"" + h + "\" width='99%' frameborder='0' style='margin: 0 auto;'></iframe>";
-    InOb.setPreviousCb(InOb.showSelectorPage);
-}
-
-InOb.photobucket= function (seedurl,pb_affsite_id) {
-    InOb.tallCenter();
-    var div_if = InOb.popid("img_iframe_holder");
-    var windims = DOM.getClientDimensions();
-    DOM.setHeight(div_if, 450);
-    var div_fw = InOb.popid("img_fromwhere");
-    div_fw.style.display = "none";
-    div_if.style.display = "block";
-
-    // Safari can't use the advanced JWidget integration so the callback
-    // URL is set to nothing
-    var cb_url = "&url=" + escape(seedurl);
-    var browser = new BrowserDetectLite();
-    if (browser.isSafari) cb_url = '';
-
-    div_if.innerHTML = '<iframe name="jwidget" id="jwidget" src="http://photobucket.com/svc/jwidget.php?width=360&height=400&largeThumb=true&pbaffsite='+pb_affsite_id+'&bg=%23FFFFFF&border=false&bordercolor=%23000000'+cb_url+'&linkType=url&textcolor=%23000000&linkcolor=%230000FF&media=image&btntxt=Paste&dimensions=false&promo=false" bgcolor="transparent" width="99%" height="440" frameborder="0" scrolling="no"></iframe>';
-    InOb.setPreviousCb(InOb.showSelectorPage);
-}
 
 InOb.fullCenter = function () {
     var windims = DOM.getClientDimensions();
@@ -938,7 +896,7 @@ LJDraft.startTimer = function () {
       url: "/tools/endpoints/draft",
       onData: function (resObj) {
               draftProperties = resObj;
-              }, 
+              },
       data: HTTPReq.formEncoded({"getProperties": 1})
       });
 
@@ -990,9 +948,9 @@ LJDraft.checkProperties = function (properties) {
          currentAdultReason != properties.adultreason ||
          currentCommentSet  != properties.commentset  ||
          currentCommentScr  != properties.commentscr  ||
-         currentAdultCnt    != properties.adultcnt       ) 
+         currentAdultCnt    != properties.adultcnt       )
        {
-         
+
          properties.userpic = currentUserpic;
          properties.subject = currentSubject;
          properties.taglist = currentTaglist;

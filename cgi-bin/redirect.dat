@@ -1,7 +1,6 @@
 /community.bml                      /community/
 /communities                        /community/
 /support.bml                        /support/
-/textmessage.bml                    /tools/textmessage.bml
 /memories.bml                       /tools/memories.bml
 /memadd.bml                         /tools/memadd.bml
 /faq.bml                            /support/faq.bml
@@ -13,6 +12,9 @@
 /manage/comments                    /manage/settings/?cat=privacy
 /manage/comments/                   /manage/settings/?cat=privacy
 /manage/comments/index.bml          /manage/settings/?cat=privacy
+/manage/domain                      /manage/settings/
+/manage/domain.bml                  /manage/settings/
+/manage/index.bml                   /manage/
 /manage/invitecodes                 /invite
 /manage/invitecodes.bml             /invite
 /manage/subscriptions               /manage/subscriptions/filters
@@ -36,10 +38,14 @@
 /syn/index.bml                      /feeds
 /syn/list                           /feeds/list
 /syn/list.bml                       /feeds/list
-/syn/raw                            /feeds/raw
-/syn/raw.bml                        /feeds/raw
-/editpics                           /editicons
-/editpics.bml                       /editicons
+/syn/raw                            /feeds/list
+/syn/raw.bml                        /feeds/list
+/feeds/raw                          /feeds/list
+/feeds/raw.bml                      /feeds/list
+/editpics                           /manage/icons
+/editpics.bml                       /manage/icons
+/editicons                          /manage/icons
+/editicons.bml                      /manage/icons
 /userinfo                           /profile
 /userinfo.bml                       /profile
 /help                               /support/
@@ -56,3 +62,5 @@
 /support/known_issues.bml           /support/
 /tools/popsubscriptions             /manage/circle/popsubscriptions
 /tools/popsubscriptions.bml         /manage/circle/popsubscriptions
+/betafeatures                       /beta
+/betafeatures.bml                   /beta

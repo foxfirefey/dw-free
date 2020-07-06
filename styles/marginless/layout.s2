@@ -1,0 +1,642 @@
+layerinfo type = "layout";
+layerinfo name = "Marginless";
+layerinfo redist_uniq = "marginless/layout";
+layerinfo author_name = "momijizukamori";
+layerinfo lang = "en";
+
+set layout_authors = [ { "name" => "momijizukamori", "type" => "user" }, { "name" => "branchandroot", "type" => "user" } ];
+
+##===============================
+## Presentation
+##===============================
+
+set layout_type = "two-columns-left";
+set userpics_position = "right";
+set sidebar_width = "12em";
+set sidebar_width_doubled = "24em";
+set userpics_position = "left";
+set use_custom_friend_colors = false;
+set custom_colors_template = "%%new%% .userpic img {border:1px solid %%foreground%%; padding: 9px; background: %%background%%;}";
+set font_base = "Verdana, Helvetica";
+set font_fallback = "sans-serif";
+set font_journal_subtitle_size = "1";
+set font_journal_subtitle_units = "em";
+set userlite_interaction_links = "text";
+set entry_management_links = "text";
+
+##===============================
+## Colors
+##===============================
+
+propgroup colors_child {
+    property use color_header_link;
+    property use color_header_link_active;
+    property use color_header_link_hover;
+    property use color_header_link_visited;
+    property Color color_header_link_current { des = "Page header current link color"; }
+    property Color color_calendar_background { des = "Calendar background color on Archive page"; }
+    property Color color_calendar_entry { des = "Day background color on Archive page"; }
+    property Color color_comment_title_even { des = "Alternate comment title color"; }
+    property Color color_comment_title_background_even { des = "Alternate comment title background color"; }
+    property Color color_userpic_background { des = "Icon border color"; }
+    }
+
+##===============================
+## Modules
+##===============================
+
+property string module_navlinks_section_override {
+    values = "none|(none)|header|Header|one|Main Module Section|two|Secondary Module Section";
+    grouped = 1;
+    }
+
+set grouped_property_override = { "module_navlinks_section" => "module_navlinks_section_override" };
+set module_navlinks_section = "one";
+
+##===============================
+## Functions
+##===============================
+
+# Give a title to the navlinks module
+function print_module_navlinks() {
+    var Page p = get_page();
+    var string title = "Navigation";
+    open_module("navlinks", "$title", "");
+    var string{}[] links = [];
+    foreach var string k ($p.views_order) {
+        var string class = "list-item-$k";
+        var string css = """ class="$k" """;
+        if ($p.view == $k) { $css = """ class="current $k" """; }
+        $links[size $links] = { "class" => $class, "item" => """<a href="$p.view_url{$k}"$css>"""+lang_viewname($k)+"""</a>""" };
+    }
+    print_module_list($links);
+    close_module();
+}
+
+# Add section for navlinks module
+function Page::print() {
+    """<!DOCTYPE html>\n<html lang="en">\n<head profile="http://www.w3.org/2006/03/hcard http://purl.org/uF/hAtom/0.1/ http://gmpg.org/xfn/11">\n""";
+    $this->print_meta_tags();
+    $this->print_head();
+    $this->print_stylesheets();
+    $this->print_head_title();
+    """</head>""";
+    $this->print_wrapper_start();
+    $this->print_control_strip();
+    """
+    <div id="canvas">
+        <div class="inner">
+            <div id="header">
+                <div class="inner">
+                    """;
+                    $this->print_module_section("header");
+                    $this->print_header();
+    """
+                </div><!-- end header>inner -->
+            </div><!-- end header -->
+            <div id="content">
+                <div class="inner">
+    """;
+                if ($*layout_type == "one-column-split") {
+    """
+                    <div id="secondary"><div class="inner">
+    """;
+                        $this->print_module_section("one");
+    """
+                    </div></div><!--  end secondary and secondary>inner -->
+    """;
+                }
+    """
+                    <div id="primary"><div class="inner">
+                        """;
+                        $this->print_body();
+    """
+                    </div></div><!-- end primary and primary>inner -->
+    """;
+                if ($*layout_type != "one-column-split") {
+    """
+                    <div id="secondary"><div class="inner">
+    """;
+                        $this->print_module_section("one");
+    """
+                    </div></div><!--  end secondary and secondary>inner -->
+    """;
+                }
+    """
+                    <div id="invisible-separator" style="float: left; width: 1px;"></div> <!-- this is a hack for IE7 + two-columns-right -->
+                    <div id="tertiary"><div class="inner">
+                        """;
+                        $this->print_module_section("two");
+    """
+                    </div></div><!-- end tertiary and tertiary>inner -->
+                    <div id="content-footer"></div>
+                </div><!-- end content>inner -->
+            </div> <!-- end content -->
+        </div> <!-- end canvas>inner -->
+    """;
+
+    """
+    <div id="footer">
+        <div class="inner">
+            """;
+            print safe """
+                <div class="page-top"><a href="#">$*text_page_top</a></div>
+        </div><!-- end footer>inner -->
+    </div><!-- end footer -->
+
+    </div> <!-- end canvas -->
+    """;
+    $this->print_wrapper_end();
+    """</html>""";
+}
+
+##===============================
+## Stylesheet
+##===============================
+
+
+function print_stylesheet () {
+var string medium_media_query = generate_medium_media_query();
+
+var string userpic_css = "";
+    if ($*userpics_position == "right") {
+        $userpic_css = """
+        .entry .userpic, .comment .userpic {
+            float: right;
+            margin-right: 0;
+            }
+        """;
+    }
+    else {
+        $userpic_css = """
+        .entry .userpic, .comment .userpic {
+            float: left;
+            margin-left: 0;
+            }
+        """;
+    }
+
+var string navlinks_css = "";
+if ($*module_navlinks_section == "header") {
+    $navlinks_css = """
+    .module-navlinks {
+        background-color: transparent;
+        border: none;
+        margin: .5em 0 0;
+        text-align: right;
+    }
+
+    .module-navlinks li {
+        border-left: 1px solid $*color_header_link;
+        display: inline;
+        padding-left: .5em;
+    }
+
+    .module-navlinks ul > li:first-child {
+        border-left: none;
+    }
+
+    .module-navlinks .module-header {
+        display: none;
+    }
+
+    .module-navlinks a { color: $*color_header_link; }
+    .module-navlinks a:visited { color: $*color_header_link_visited; }
+    .module-navlinks a:hover { color: $*color_header_link_hover; }
+    .module-navlinks a:active { color: $*color_header_link_active; }
+    .module-navlinks a.current { color: $*color_header_link_current; }""";
+}
+
+"""
+
+/*--- Marginless ---*/
+/*--- by momijizukamori ---*/
+/*--- adapted from Paletteable ---*/
+/*--- by branchandroot ---*/
+
+/*--- Main ---*/
+
+H1, H2, H3 {
+    padding: 0;
+    margin: 0;
+}
+
+h1#title a {
+    color: $*color_page_title;
+    text-decoration: none;
+}
+
+blockquote {
+    font-style: italic;
+    padding: 1em 1em .5em 2em;
+    }
+
+blockquote > p:first-child {
+    margin-top: 0;
+    }
+
+dl dt {
+    font-weight: bold;
+    }
+
+.userpic img {
+    border: 10px solid $*color_userpic_background;
+   }
+
+
+/*--- Main Containers ---*/
+
+#canvas {
+    margin: 0;
+    position: relative;
+    }
+
+#content {
+    background-color: $*color_entry_background;
+    }
+
+#primary {
+    clear:both;
+    }
+
+/*--- Journal Header ---*/
+
+h2#pagetitle {
+     margin-top: -1em;
+     font-style:italic;
+     text-align:right;
+}
+
+#header {
+    padding: .5em 1em;
+    }
+
+/*--- Journal Navigation ---*/
+
+.navigation {
+    text-align: right;
+    }
+
+.page-month .navigation {
+    text-align: center;
+    }
+
+/*--- Entries & Comments ---*/
+
+.entry-wrapper {
+    margin-bottom: 1em;
+    }
+
+#primary .separator-after {
+    width: 100%;
+    background-color:$*color_module_background;
+    height: 10px;
+    }
+
+@media $medium_media_query {
+    .column-left #primary .separator-after {
+        margin-left: -1em;
+        }
+
+    .column-right #primary .separator-after {
+        margin-right: -1em;
+        }
+
+}
+
+.entry .userpic, .comment .userpic {
+    margin: 0 1em .5em 1em;
+    }
+
+$userpic_css
+
+.datetime, .poster-ip {
+    font-size: small;
+    }
+
+.entry .contents, .comment .contents {
+    margin: 1em 0;
+    }
+
+.entry-content, .comment-content {
+    margin-top: 1em;
+    }
+
+.entry-content { /*keeps entry metadata from shifting on very short entries */
+    min-height: 3em;
+    }
+
+.entry .metadata-label, .entry .tag-text {
+    font-weight: bold;
+    }
+
+.entry .metadata ul, .entry .metadata li {
+    display: block;
+    list-style: none;
+    margin: 0;
+}
+
+.entry .metadata.bottom-metadata {
+    margin-top:1em;
+    margin-bottom: -1em;
+    clear: left;
+    }
+
+.entry .footer, .comment .footer {
+    clear: both;
+    padding-bottom: .5em;
+    }
+
+.entry .tag {
+    margin-bottom: .5em;
+    }
+
+ul.entry-management-links, ul.comment-management-links {
+    display: block;
+    float: left;
+    margin-bottom: .5em;
+    margin-top: 0;
+    }
+
+ul.entry-interaction-links, ul.comment-interaction-links {
+    display: block;
+    text-align: right;
+    margin-bottom: .5em;
+    margin-right: .5em;
+    margin-top: .5em;
+    }
+
+.comment-wrapper {
+    background-color: $*color_entry_background;
+    }
+
+.comment-wrapper .header {
+    padding: .25em .5em;
+    }
+
+.comment-wrapper-odd .header {
+    background-color: $*color_comment_title_background;
+    color: $*color_comment_title;
+    }
+
+.comment-wrapper-odd .header a {
+    background-color: transparent;
+    color: $*color_comment_title;
+    }
+
+.comment-wrapper-even .header {
+    background-color: $*color_comment_title_background_even;
+    color: $*color_comment_title_even;
+    }
+
+.comment-wrapper-even .header a {
+    background: transparent;
+    color: $*color_comment_title_even;
+    }
+
+.comment-wrapper-even .comment-title,
+.comment-wrapper-odd .comment-title {
+    background-color: transparent;
+    font-size: large;
+    margin-bottom: .25em;
+    }
+
+.multiform-checkbox {
+    clear: both;
+    display: block;
+    }
+
+.partial .comment {
+    padding: .25em .5em;
+    }
+
+.partial .comment-title {
+    display: inline;
+    font-size: medium;
+    margin-bottom: 0;
+    }
+
+.comment-wrapper-even.partial .comment-title,
+.comment-wrapper-odd.partial .comment-title,
+.comment-wrapper-even.partial .comment-title a,
+.comment-wrapper-odd.partial .comment-title a {
+    background-color: transparent;
+    color: inherit;
+    }
+
+#qrdiv {
+    clear: both;
+     }
+
+/*--- Archive Pages ---*/
+
+.month {
+    margin-bottom: 2em;
+    }
+
+.month .contents {
+    padding: 1em .5em 0;
+    }
+
+.month .footer {
+    padding: 0 .5em 1em;
+    text-align: center;
+    }
+
+.month .header {
+    background-color: $*color_entry_title_background;
+    color: $*color_entry_title;
+    font-family: $*font_entry_title;
+    padding: 1px .25em;
+    }
+
+table.month td, table.month th {
+    vertical-align: top;
+    padding: .25em .5em;
+    background: $*color_calendar_background;
+    }
+
+table.month caption {
+    color: $*color_entry_background;
+    }
+
+td.day-has-entries {
+    background: $*color_calendar_entry !important;
+    }
+
+#archive-month .month {
+    padding: 0 1em;
+    }
+
+#archive-month .entry-title {
+    font-weight: bold;
+    }
+
+h3.day-date {
+    text-align: center;
+    margin-bottom: 2em;
+    }
+
+/*--- Icon Page ---*/
+
+div.icons-container div.icon:nth-of-type(2n) {
+    clear: both;
+}
+
+.icons-container .icon {
+    float: left;
+    margin-bottom: 15px;
+    min-width: 350px;
+    vertical-align: bottom;
+    width: 50%;
+    display:table;
+}
+
+.icon-image {
+    display: inline;
+    float: left;
+    margin-right: 1em;
+    min-width: 100px;
+    margin-top: 0;
+}
+
+.icon-info {
+    overflow: auto;
+    vertical-align: bottom;
+    word-wrap: break-word;
+    display:table-cell;
+    width:100%;
+}
+
+.icon-info .label,
+.icon-info span {
+    font-weight: bold;
+}
+
+.icons-container .inner .footer, .icon-pages {
+    clear: both;
+    text-align: center;
+}
+/*--- Sidebars ---*/
+
+#secondary, #tertiary { width: 100%; }
+#header .module-navlinks { background: $*color_header_background;}
+#secondary, #tertiary,
+.module-wrapper {
+    background-color: $*color_module_background;
+    }
+#content .module { display: inline-block; vertical-align: top; width: $*sidebar_width;
+        }
+@media $medium_media_query {
+    .multiple-columns .module-wrapper {
+        background-color: transparent;
+    }
+
+    .multiple-columns #content .module {
+        display: block; width: auto;
+    }
+
+    .column-left #content, .column-right #content {
+        border-color: $*color_module_background;
+        }
+
+    .multiple-columns #secondary, .multiple-columns #tertiary {
+        width: $*sidebar_width;
+    }
+
+    .multiple-columns #tertiary {
+        background-color: transparent;
+    }
+
+    .two-columns #tertiary .module {
+        background-color: transparent;
+        color: $*color_entry_text;
+        }
+
+    .two-columns #tertiary .module a  {
+        color: $*color_entry_link;
+        }
+
+    .two-columns #tertiary .module a:visited {
+        color: $*color_entry_link_visited;
+        }
+
+    .two-columns #tertiary .module a:hover {
+        color: $*color_entry_link_hover;
+        }
+
+    .two-columns #tertiary .module a:active {
+        color: $*color_entry_link_active;
+        }
+
+    .two-columns #tertiary .module h2 {
+        color: $*color_entry_title;
+        }
+
+    .two-columns #tertiary .separator-after {
+        clear: both;
+        }
+
+    .two-columns-left #tertiary {
+        margin-left: 0;
+        }
+
+    .two-columns-right #tertiary {
+        margin-right: 0;
+        }
+}
+
+.module {
+    border: none;
+    margin-bottom: 1em;
+    }
+
+.module-content ul, .module-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    }
+
+.module-content ul ul {
+    margin-left: 1em;
+    }
+
+.module-header {
+    font-size: 1.2em;
+    }
+.module-header a {
+    color: $*color_module_title;
+    }
+
+.module .userlite-interaction-links {
+    margin-top: .5em;
+    }
+
+.module-navlinks a.current {
+    color: $*color_module_text;
+    text-decoration: none;
+    }
+
+.any-column .module-calendar .module-content {
+    text-align: left;
+    }
+
+.any-column .module-calendar table {
+    margin: 0;
+    font-size:0.9em;
+    }
+
+.search-box {
+    width:100%;
+    }
+
+$navlinks_css
+
+/*--- Footer ---*/
+
+#footer {
+    text-align: center;
+    }
+
+    """;
+}

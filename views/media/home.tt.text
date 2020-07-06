@@ -1,0 +1,11 @@
+;; -*- coding: utf-8 -*-
+
+.edit2=Manage Your Images
+
+.new=Upload Images
+
+.title2=Your Images
+
+.usage=You have used [[usage]] ([[percentage]]) of your [[quota]] quota.
+
+.view=View Your Images

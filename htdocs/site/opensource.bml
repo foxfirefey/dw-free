@@ -20,13 +20,13 @@ body<=
 
 <p><?_ml .os.intro _ml?></p>
 
-<p><?_code return BML::ml ('.os.dw', {'sitenameshort' => $LJ::SITENAMESHORT}); _code?></p>
+<p><?_code return BML::ml ('.os.dw2', {'sitenameshort' => $LJ::SITENAMESHORT}); _code?></p>
 
 <p><?_ml .os.lj _ml?></p>
 
 <h1><?_ml .licensing.header _ml?></h1>
 
-<p><?_ml .licensing.main _ml?></p>
+<p><?_ml .licensing.main1 _ml?></p>
 
 <h1><?_ml .attrib.header _ml?></h1>
 
@@ -36,9 +36,9 @@ body<=
 
 <h1><?_ml .development.header _ml?></h1>
 
-<p><?_ml .development.main _ml?></p>
+<p><?_ml .development.main2 _ml?></p>
 
-<p><?_ml .development.directions _ml?></p>
+<p><?_ml .development.directions4 _ml?></p>
 
 <=body
 windowtitle=><?_ml .title _ml?>

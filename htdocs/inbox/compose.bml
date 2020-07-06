@@ -121,7 +121,7 @@ body<=
                 }
 
                 # Can't send to unvalidated users
-                unless ($tou->is_validated) {
+                unless ( $tou->is_validated || $remote->has_priv( "siteadmin", "*" ) ) {
                     push @errors, BML::ml( 'error.message.unvalidated',
                       { ljuser => $tou->ljuser_display } );
                     next;
@@ -133,12 +133,15 @@ body<=
                     next;
                 }
 
+                my $msguserpic;
+                $msguserpic = $POST{'prop_picture_keyword'} if ( defined $POST{'prop_picture_keyword'} );
+
                 push @msg_list, LJ::Message->new({journalid => $remote_id,
                                             otherid   => $tou->{userid},
                                             subject   => $msg_subject_text,
                                             body      => $msg_body_text,
                                             parent_msgid => $POST{'msg_parent'} || undef,
-                                            userpic      => $POST{'prop_picture_keyword'} || undef,
+                                            userpic      => $msguserpic,
                                            });
 
             }
@@ -169,6 +172,7 @@ body<=
                 unless (@errors) {
                     $body .= $ML{'.message.sent'};
                     $body .= "<?p $ML{'.message.sent.options'} <ul>";
+                    $body .= "<li><a href='$LJ::SITEROOT/inbox/?page=0&view=usermsg_sent_last'>$ML{'.link.view.message'}</a> $ML{'.link.view.warning'}</li>";
                     $body .= "<li><a href='$LJ::SITEROOT/inbox/compose'>$ML{'.link.send.message'}</a></li>";
                     $body .= "<li><a href='$LJ::SITEROOT/inbox/'>$ML{'.link.inbox'}</a></li>";
                     $body .= "<li><a href='$LJ::SITEROOT/'>$ML{'.link.home'}</a></li>";
@@ -199,7 +203,7 @@ body<=
         $reply_u = $msg->other_u;
         $reply_to = $reply_u->display_name;
         $disabled_to = 1;
-        $msg_subject = $msg->subject || "(no subject)";
+        $msg_subject = $msg->subject_raw || "(no subject)";
         $msg_subject = "Re: " . $msg_subject
             unless $msg_subject =~ /Re: /;
         $msg_body = $msg->body_raw;
@@ -245,7 +249,7 @@ body<=
         $body .= $reply_u->ljuser_display;
         $body .= LJ::html_hidden({
                     name      => 'msg_to',
-                    value     => "$reply_to",
+                    value     => $reply_u->username,
                  });
     } else {
         $body .= LJ::html_text({

@@ -24,9 +24,7 @@ sub new {
     my $class = shift;
     my $key   = shift;
 
-    my $self = {
-        key => $key,
-    };
+    my $self = { key => $key, };
 
     return bless $self, $class;
 }
@@ -54,7 +52,7 @@ sub remote_can_add {
 
 sub user_can_add {
     my $self = shift;
-    my $u     = shift;
+    my $u    = shift;
 
     return 0 unless $u;
     return 1;
@@ -80,7 +78,7 @@ sub is_started {
     return 0 unless $conf;
 
     my $now = time();
-    return 1 if ! exists $conf->{start_time};
+    return 1 if !exists $conf->{start_time};
     return 1 if $conf->{start_time} <= $now;
     return 0;
 }
@@ -93,9 +91,22 @@ sub is_expired {
     return 0 unless $conf;
 
     my $now = time();
-    return 0 if ! exists $conf->{end_time};
+    return 0 if !exists $conf->{end_time};
     return 0 if $conf->{end_time} > $now;
     return 1;
+}
+
+# are we opt-in, or opt-out?
+sub is_optout {
+    return $_[0]->key =~ /_optout$/ ? 1 : 0;
+}
+
+sub is_sitewide_beta {
+    my $self = $_[0];
+
+    my $conf = $self->conf;
+    return 0 unless $conf;
+    return 1 if $conf->{sitewide};
 }
 
 # any arguments to pass to the translation string to describe this feature?

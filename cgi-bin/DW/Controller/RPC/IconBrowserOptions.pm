@@ -7,7 +7,7 @@
 # Authors:
 #      Afuna <coder.dw@afunamatata.com>
 #
-# Copyright (c) 2012 by Dreamwidth Studios, LLC.
+# Copyright (c) 2012-2013 by Dreamwidth Studios, LLC.
 #
 # This program is free software; you may redistribute it and/or modify it under
 # the same terms as Perl itself. For a copy of the license, please reference
@@ -17,14 +17,15 @@ package DW::Controller::RPC::IconBrowserOptions;
 
 use strict;
 use DW::Routing;
-use JSON;
+use LJ::JSON;
 
-DW::Routing->register_string( "/__rpc_iconbrowser_save", \&iconbrowser_save, app => 1,  format => 'json' );
+DW::Routing->register_rpc( "iconbrowser_save", \&iconbrowser_save, format => 'json' );
 
 # saves the metatext / smallicons options (Y/N)
 sub iconbrowser_save {
+
     # gets the request and args
-    my $r = DW::Request->get;
+    my $r    = DW::Request->get;
     my $post = $r->post_args;
 
     my $remote = LJ::get_remote();
@@ -37,7 +38,7 @@ sub iconbrowser_save {
         $remote->iconbrowser_smallicons( $post->{smallicons} eq "true" ? "Y" : "N" );
     }
 
-    $r->print( objToJson( { success => 1 } ) );
+    $r->print( to_json( { success => 1 } ) );
     return $r->OK;
 }
 

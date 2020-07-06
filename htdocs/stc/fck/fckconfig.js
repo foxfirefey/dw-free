@@ -58,11 +58,6 @@ FCKConfig.AutoGrowMax = 400 ;
 // LIVEJOURNAL SPECIFIC
 FCKConfig.Plugins.Add('livejournal');
 FCKConfig.ProtectedSource.Add( /<(lj )?user[\s\S]*?\/lj>/gi ); // <(lj) user>
-FCKConfig.ProtectedSource.Add( /<(lj|site)-template name=['"]\w+['"]\S+?<\/\1template>/gi ); // <lj/site-template>
-FCKConfig.ProtectedSource.Add( /<(lj|site)-template id=['"]?\d+['"]? name=['"]?\w+['"]?>.*?<\/\1template>/gi ); // <lj/site-template></lj/site-template>
-FCKConfig.ProtectedSource.Add( /<(lj|site)-template name=['"]?\w+['"]? id=['"]?\d+['"]?>.*?<\/\1template>/gi ); // <lj/site-template></lj/site-template>
-FCKConfig.ProtectedSource.Add( /<(lj|site)-template id=['"]?\d+['"]? name=['"]?\w+['"]? \/>/gi ); // <lj/site-template />
-FCKConfig.ProtectedSource.Add( /<(lj|site)-template name=['"]?\w+['"]? id=['"]?\d+['"]? \/>/gi ); // <lj/site-template />
 FCKConfig.ProtectedSource.Add( /<(lj-)?poll[\s\S]*?<\/\1poll>/gi ); // polls
 FCKConfig.ProtectedSource.Add( /<div.*?><(lj-)?poll-\d+?><\/\1poll-\d+?><\/div>/gi ); // generated polls
 //FCKConfig.ProtectedSource.Add( /<lj-pq.+?>.+?<\/lj-pq>/gi ); // lj polls
@@ -336,7 +331,6 @@ FCKConfig.LinkUploadURL = FCKConfig.BasePath + 'filemanager/connectors/' + _Quic
 FCKConfig.LinkUploadAllowedExtensions	= ".(7z|aiff|asf|avi|bmp|csv|doc|fla|flv|gif|gz|gzip|jpeg|jpg|mid|mov|mp3|mp4|mpc|mpeg|mpg|ods|odt|pdf|png|ppt|pxd|qt|ram|rar|rm|rmi|rmvb|rtf|sdc|sitd|swf|sxc|sxw|tar|tgz|tif|tiff|txt|vsd|wav|wma|wmv|xls|xml|zip)$" ;			// empty for all
 FCKConfig.LinkUploadDeniedExtensions	= "" ;	// empty for no one
 
-FCKConfig.ImagePhotobucket = true;
 FCKConfig.ImageUpload = true ;
 //FCKConfig.ImageUploadURL = FCKConfig.BasePath + 'filemanager/connectors/' + _QuickUploadLanguage + '/upload.' + _QuickUploadExtension + '?Type=Image' ;
 FCKConfig.ImageUploadAllowedExtensions	= ".(jpg|gif|jpeg|png|bmp)$" ;		// empty for all

@@ -3,6 +3,15 @@
 
 # LiveJournal configuration file.
 
+# THIS FILE IS INTENDED FOR EXAMPLE/DOCUMENTATION PURPOSES ONLY.
+
+# Ideally, any configuration changes for your site should go in
+# config-local.pl or config-private.pl.  If you feel like you need
+# a site-specific config.pl, make sure you copy it to ext/local/etc
+# and customize it there.  This will protect it from getting clobbered
+# when you upgrade to the newest Dreamwidth code in the future, but
+# you will not automatically inherit additions or updates to this file.
+
 {
     package LJ;
 
@@ -18,13 +27,11 @@
     $DOMAIN_WEB = "www.$DOMAIN"; # necessary
 
     # this is what gets prepended to all URLs
-    $SITEROOT = "http://$DOMAIN_WEB";
+    $SITEROOT = "$PROTOCOL://$DOMAIN_WEB";
+    $RELATIVE_SITEROOT = "//$DOMAIN_WEB";
 
     # prefix for images
     $IMGPREFIX = "$SITEROOT/img";
-
-    # set this if you're running an FTP server that mirrors your htdocs/files
-    #$FTPPREFIX = "ftp://ftp.$DOMAIN";
 
     # where we set the cookies (note the period before the domain)
     # can be one value or an array ref (to accomodate certain old
@@ -34,6 +41,7 @@
     # email addresses
     $ADMIN_EMAIL = "webmaster\@$DOMAIN";
     $ABUSE_EMAIL = "abuse\@$DOMAIN";
+    $ANTISPAM_EMAIL = "antispam\@$DOMAIN";
     $SUPPORT_EMAIL = "support\@$DOMAIN";
     $COMMUNITY_EMAIL = "community_invitation\@$DOMAIN";
     $BOGUS_EMAIL = "dw_null\@$DOMAIN";
@@ -41,11 +49,8 @@
     $PRIVACY_EMAIL = "privacy\@$DOMAIN";
     $ACCOUNTS_EMAIL = "accounts\@$DOMAIN";
 
-    # news site support. if set, that journal loads on the main page.
-    #$FRONTPAGE_JOURNAL = "news";
-
     # css proxy
-    $CSSPROXY = "http://cssproxy.$DOMAIN/";
+    $CSSPROXY = "//cssproxy.$DOMAIN/";
 
     # setup subdomains that work
     %SUBDOMAIN_FUNCTION = (
@@ -57,6 +62,8 @@
             mobile => 'mobile',
             m => 'mobile',
             support => 'support',
+            u => 'userpics',
+            v => 'userpics',
         );
 
 
@@ -65,25 +72,12 @@
     ### Policy Options
     ###
 
-    # filter comments for spam using this list of regular expressions:
-    #@TALKSPAM = (
-    #             "morphese",
-    #             );
-
     # require new free acounts to be referred by an existing user?
     $USE_ACCT_CODES = 1;
-
-    #$EVERYONE_VALID = 1; # are all users validated by default?
 
     ###
     ### System Information
     ###
-
-    # on a larger installation, it's useful to have multiple qbufferd.pl
-    # processes, one for each command type.  this is unecessary on a
-    # small installation.  you can also specify a delay between runs.
-    #@QBUFFERD_ISOLATE = ('ljcom_newpost');
-    #$QBUFFERD_DELAY   = 10;
 
     # path to sendmail and any necessary options
     $SENDMAIL = "/usr/sbin/sendmail -t";
@@ -91,14 +85,6 @@
     # command-line to spell checker, or undefined if you don't want spell checking
     #$SPELLER = "/usr/local/bin/ispell -a";
     #$SPELLER = "/usr/bin/aspell pipe --mode=html --sug-mode=fast --ignore-case";
-
-    # to save bandwidth, should we compress pages before they go out?
-    # require Compress::Zlib to be installed
-    #$DO_GZIP = 1;
-
-    # Support signed PGP email for email posting?
-    # Requires GnuPG::Interface and Mail::GnuPG to be installed.
-    #$USE_PGP = 1;
 
     # HINTS:
     #   how far you can scroll back on lastn and friends pages.
@@ -126,27 +112,20 @@
     # Users can post to user@$EMAIL_POST_DOMAIN.
     $EMAIL_POST_DOMAIN = "post.$DOMAIN";
 
-    # This should be a path to a Maildir, matching the delivery
-    # location of your MTA.
-    # If you are using sendmail, you should deliver with procmail
-    # (versions 3.14 and above) for Maildir support.
-    #$MAILSPOOL = '/home/livejournal/mail';
-
-    # Allow users to point their own domains here?
-    $OTHER_VHOSTS = 1;
+    # Support replying to comments via email?
+    # We set the reply-to for the user in the form of user.$auth@EMAIL_REPLY_DOMAIN
+    $EMAIL_REPLY_DOMAIN = "replies.$DOMAIN";
 
     # turns these from 0 to 1 to disable parts of the site that are
     # CPU & database intensive or that you simply don't want to use
     %DISABLED = (
                  adult_content => 0,
-                 blockwatch => 1,
+                 loggedout_support_requests => 1,
                  'community-logins' => 0,
                  captcha => 0,
                  directory => 0,
                  esn_archive => 1,
                  eventlogrecord => 1,
-                 feedster_search => 0,
-                 free_create => 1,
                  googlecheckout => 1,
                  icon_renames => 0,
                  importing => 0,
@@ -157,6 +136,7 @@
                  'show-talkleft' => 0,
                  'stats-recentupdates' => 0,
                  'stats-newjournals' => 0,
+                 'support_request_language' => 1,
                  tellafriend => 0,
                  );
 
@@ -173,6 +153,7 @@
     #   return 0 if $module eq "textcaptcha";
     #   return 0;
     #};
+    #$DEFAULT_CAPTCHA_TYPE = "T";
 
 
     # turn $SERVER_DOWN on while you do any maintenance
@@ -186,10 +167,6 @@
     $MSG_NO_COMMENT = "Due to hardware maintenance, you cannot leave comments at this time.  Watch the news " .
                       "page for updates.";
     #$MSG_DB_UNAVAILABLE = "Sorry, database temporarily unavailable.  Please see <a href='...'>...</a> for status updates.";
-
-    # can also disable media uploads/modifications, if for some reason you need to
-    # turn off your MogileFS install, for example.
-    $DISABLE_MEDIA_UPLOADS = 0;
 
     ###
     ### Language / Scheme support
@@ -205,42 +182,10 @@
 
     # supported languages (defaults to qw(en) if none given)
     # First element is default language for user interface, untranslated text
-    @LANGS = qw( en_DW );
+    unless (@LANGS) {
+      @LANGS = qw( en_DW ) if -d "$HOME/ext/dw-nonfree";
+    }
 
-    # support unicode (posts in multiple languages)?  leave enabled.
-    $UNICODE = 1;
-
-
-    ###
-    ### Database Configuration
-    ###
-
-    # if database logging is enabled above, should we log images or just page requests?
-    #$DONT_LOG_IMAGES = 1;
-
-    # Turn on memory/cpu usage statistics generation for database logs (requires the
-    # GTop module to be installed)
-    #$LOG_GTOP = 1;
-
-    # directory optimizations
-    $DIR_DB_HOST = "master";  # DB role to use when connecting to directory DB
-    $DIR_DB = "";             # by default, hit the main database (bad for big sites!)
-
-    # list of all clusters - each one needs a 'cluster$i' role in %DBINFO
-    @CLUSTERS = (1);    # eg: (1, 2, 3) (for scalability)
-
-    # can users choose which cluster they're assigned to?  leave this off.
-    $ALLOW_CLUSTER_SELECT = 0;
-
-    # which cluster(s) get new users?
-    # if it's an arrayref, choose one of the listed clusters at random.  you can weight
-    # new users by repeating cluster numbers, e.g. [ 1, 1, 1, 2 ] puts 75% of people on
-    # cluster 1, 25% of people on cluster 2.  clusters are checked for validity before
-    # being used.
-    $DEFAULT_CLUSTER = [ 1 ];
-
-    # which cluster should syndication accounts live on?
-    $SYND_CLUSTER = 1;
 
     ###
     ### Account Information
@@ -250,18 +195,11 @@
     # leave undefined if you don't want to use it.
     @INITIAL_SUBSCRIPTIONS = qw(news);
 
-    # initial optional friends
-    #@LJ::INITIAL_OPTIONAL_SUBSCRIPTIONS = qw(news);
-
-    # initial friends checked by default on create.bml
-    #@LJ::INITIAL_OPTOUT_SUBSCRIPTIONS = qw(news);
-
     # some system accounts have so many friends it is harmful to display
     # them.  list these accounts here.
     #%FORCE_EMPTY_SUBSCRIPTIONS = (
-     #                             '81752' => 'paidmembers'
+    #                             '81752' => 'paidmembers'
     #                             );
-
 
     # test accounts are special
     @TESTACCTS = qw(test);
@@ -274,49 +212,113 @@
     # default capability limits, used only when no other
     # class-specific limit below matches.
     %CAP_DEF = (
-            activeentries => 0,
-            'getselfemail' => 0,
+            'activeentries' => 0,
+            'bonus_icons' => 0,
+            'can_post' => 1,
             'checkfriends' => 0,
             'checkfriends_interval' => 300,
-            'friendsviewupdate' => 30,
-            'interests' => 150,
-            'makepoll' => 0,
-            'maxfriends' => 500,
-            'moodthemecreate' => 0,
             'directorysearch' => 0,
-            'styles' => 0,
-            's2styles' => 0,
-            's2viewentry' => 1,
-            's2viewreply' => 1,
-            's2stylesmax' => 0,
-            's2layersmax' => 0,
-            'textmessage' => 0,
-            'userdomain' => 1,
-            'useremail' => 1,
-            'userpics' => 5,
+            'emailpost' => 0,
             'findsim' => 0,
             'friendspage_per_day' => 0,
+            'friendsviewupdate' => 30,
             'full_rss' => 1,
-            'can_post' => 1,
             'get_comments' => 1,
+            'getselfemail' => 0,
+            'google_analytics' => 0,
+            'hide_email_after' => 60,
+            'import_comm' => 0,
+            'interests' => 150,
             'leave_comments' => 1,
+            'makepoll' => 0,
+            'maxcomments' => 10000,
+            'maxfriends' => 500,
+            'media_file_quota' => 500, # megabytes
             'mod_queue' => 50,
             'mod_queue_per_poster' => 5,
-            'hide_email_after' => 60,
-            'userlinks' => 10,
-            'maxcomments' => 10000,
-            'rateperiod-lostinfo' => 60*60*24, # 24 hours
-            'rateallowed-lostinfo' => 3,
-            'rateperiod-failed_login' => 60*5, # 5 minutes
-            'rateallowed-failed_login' => 3,
-            'rateperiod-commcreate' => 86400*7, # 7 days / 1 week
+            'moodthemecreate' => 0,
             'rateallowed-commcreate' => 3,
+            'rateallowed-failed_login' => 3,
+            'rateallowed-lostinfo' => 3,
+            'rateperiod-commcreate' => 86400*7, # 7 days / 1 week
+            'rateperiod-failed_login' => 60*5, # 5 minutes
+            'rateperiod-lostinfo' => 60*60*24, # 24 hours
+            's2layersmax' => 0,
+            's2styles' => 0,
+            's2stylesmax' => 0,
+            's2viewentry' => 1,
+            's2viewreply' => 1,
             'staff_headicon' => 0,
-            thread_expand_all => 0,
-            thread_expander => 0,
+            'styles' => 0,
+            'thread_expand_all' => 0,
+            'thread_expander' => 0,
             'track_all_comments' => 0,
+            'userdomain' => 1,
+            'useremail' => 1,
+            'userlinks' => 10,
+            'userpics' => 5,
             'xpost_accounts' => 0,
             );
+
+    # for convenience and consistency, let's put common caps for all paid account types here:
+    my %CAP_PAID = (
+            'paid' => 1,
+            'activeentries' => 1,
+            'bonus_icons' => 1,
+            'checkfriends' => 1,
+            'checkfriends_interval' => 600,
+            'directory' => 1,
+            'edit_comments' => 1,
+            'emailpost' => 1,
+            'fastserver' => 1,
+            'findsim' => 1,
+            'friendsfriendsview' => 1,
+            'friendspage_per_day' => 1,
+            'friendsviewupdate' => 1,
+            'full_rss' => 1,
+            'getselfemail' => 1,
+            'google_analytics' => 1,
+            'import_comm' => 1,
+            'makepoll' => 1,
+            'mass_privacy' => 1,
+            'mod_queue' => 100,
+            'mod_queue_per_poster' => 5,
+            'moodthemecreate' => 1,
+            'popsubscriptions' => 1,
+            's2props' => 1,
+            's2styles' => 1,
+            'security_filter' => 1,
+            'stickies' => 5,
+            'synd_create' => 1,
+            'thread_expand_all' => 1,
+            'thread_expander' => 1,
+            'track_defriended' => 1,
+            'track_pollvotes' => 1,
+            'track_thread' => 1,
+            'track_user_newuserpic' => 1,
+            'useremail' => 1,
+            'userlinks' => 50,
+            'usermessage_length' => 10000,
+            'userpicselect' => 1,
+            'viewmailqueue' => 1,
+    );
+
+    # for convenience and consistency, let's put common caps for all premium account types here:
+    my %CAP_PREMIUM = (
+            'bookmark_max' => 1000,
+            'inbox_max' => 6000,
+            'interests' => 250,
+            'maxfriends' => 2000,
+            's2layersmax' => 300,
+            's2stylesmax' => 100,
+            'subscriptions' => 1000,
+            'tags_max' => 2000,
+            'tools_recent_comments_display' => 150,
+            'track_all_comments' => 1,
+            'userlinks' => 100,
+            'userpics' => 150,
+            'xpost_accounts' => 5,
+    );
 
     # capability class limits.
     # keys are bit numbers, from 0 .. 15.  values are hashrefs
@@ -340,16 +342,16 @@
             'checkfriends' => 0,
             'checkfriends_interval' => 0,
             'directory' => 1,
-            'domainmap' => 0,
             'edit_comments' => 0,
-            'emailpost' => 0,
+            'emailpost' => 1,
             'findsim' => 0,
             'friendsfriendsview' => 0,
             'friendspage_per_day' => 0,
             'friendsviewupdate' => 0,
             'full_rss' => 1,
             'getselfemail' => 0,
-            google_analytics => 0,
+            'google_analytics' => 0,
+            'import_comm' => 1,
             'inbox_max' => 2000,
             'interests' => 150,
             'makepoll' => 0,
@@ -358,18 +360,18 @@
             'mod_queue' => 50,
             'mod_queue_per_poster' => 3,
             'moodthemecreate' => 0,
-            popsubscriptions => 0,
+            'popsubscriptions' => 0,
             's2layersmax' => 0,
             's2props' => 0,
             's2styles' => 0,
             's2stylesmax' => 0,
             'security_filter' => 0,
+            'stickies' => 2,
             'subscriptions' => 25,
             'synd_create' => 1,
             'tags_max' => 1000,
-            'textmessaging' => 0,
-            thread_expand_all => 0,
-            thread_expander => 0,
+            'thread_expand_all' => 0,
+            'thread_expander' => 0,
             'tools_recent_comments_display' => 10,
             'track_all_comments' => 0,
             'track_defriended' => 0,
@@ -393,112 +395,29 @@
             '_key' => 'paid_user', # Some things expect that key name
             '_visible_name' => 'Paid Account',
             '_account_type' => 'paid',
-            'activeentries' => 1,
+            '_refund_points' => 30,
+            %CAP_PAID,
             'bookmark_max' => 500,
-            'checkfriends' => 1,
-            'checkfriends_interval' => 600,
-            'directory' => 1,
-            'domainmap' => 1,
-            'edit_comments' => 1,
-            'emailpost' => 1,
-            'findsim' => 1,
-            'friendsfriendsview' => 1,
-            'friendspage_per_day' => 1,
-            'friendsviewupdate' => 1,
-            'full_rss' => 1,
-            'getselfemail' => 1,
-            google_analytics => 1,
             'inbox_max' => 4000,
             'interests' => 200,
-            'makepoll' => 1,
-            'mass_privacy' => 1,
             'maxfriends' => 1500,
-            'mod_queue' => 100,
-            'mod_queue_per_poster' => 5,
-            'moodthemecreate' => 1,
-            popsubscriptions => 1,
             's2layersmax' => 150,
-            's2props' => 1,
-            's2styles' => 1,
             's2stylesmax' => 50,
-            'security_filter' => 1,
             'subscriptions' => 500,
-            'synd_create' => 1,
             'tags_max' => 1500,
-            'textmessaging' => 1,
-            thread_expand_all => 1,
-            thread_expander => 1,
             'tools_recent_comments_display' => 100,
             'track_all_comments' => 0,
-            'track_defriended' => 1,
-            'track_pollvotes' => 1,
-            'track_thread' => 1,
-            'track_user_newuserpic' => 1,
-            'useremail' => 1,
-            'userlinks' => 50,
-            'usermessage_length' => 10000,
             'userpics' => 75,
-            'userpicselect' => 1,
-            'viewmailqueue' => 1,
             'xpost_accounts' => 3,
-            'paid' => 1,
-            'fastserver' => 1,
         },
         '4' => {  # 0x10
             '_name' => 'Premium Paid',
             '_key' => 'premium_user',
             '_visible_name' => 'Premium Paid Account',
             '_account_type' => 'premium',
-            'activeentries' => 1,
-            'bookmark_max' => 1000,
-            'checkfriends' => 1,
-            'checkfriends_interval' => 600,
-            'directory' => 1,
-            'domainmap' => 1,
-            'edit_comments' => 1,
-            'emailpost' => 1,
-            'findsim' => 1,
-            'friendsfriendsview' => 1,
-            'friendspage_per_day' => 1,
-            'friendsviewupdate' => 1,
-            'full_rss' => 1,
-            'getselfemail' => 1,
-            google_analytics => 1,
-            'inbox_max' => 6000,
-            'interests' => 250,
-            'makepoll' => 1,
-            'mass_privacy' => 1,
-            'maxfriends' => 2000,
-            'mod_queue' => 100,
-            'mod_queue_per_poster' => 5,
-            'moodthemecreate' => 1,
-            popsubscriptions => 1,
-            's2layersmax' => 300,
-            's2props' => 1,
-            's2styles' => 1,
-            's2stylesmax' => 100,
-            'security_filter' => 1,
-            'subscriptions' => 1000,
-            'synd_create' => 1,
-            'tags_max' => 2000,
-            'textmessaging' => 1,
-            thread_expand_all => 1,
-            thread_expander => 1,
-            'tools_recent_comments_display' => 150,
-            'track_all_comments' => 1,
-            'track_defriended' => 1,
-            'track_pollvotes' => 1,
-            'track_thread' => 1,
-            'track_user_newuserpic' => 1,
-            'useremail' => 1,
-            'userlinks' => 50,
-            'usermessage_length' => 10000,
-            'userpics' => 150,
-            'userpicselect' => 1,
-            'viewmailqueue' => 1,
-            'xpost_accounts' => 5,
-            'paid' => 1,
-            'fastserver' => 1,
+            '_refund_points' => 41,
+            %CAP_PAID,
+            %CAP_PREMIUM,
         },
         # a capability class with a name of "_moveinprogress" is required
         # if you want to be able to move users between clusters with the
@@ -512,112 +431,16 @@
             '_key' => 'permanent_user',
             '_visible_name' => 'Seed Account',
             '_account_type' => 'seed',
-            'activeentries' => 1,
-            'bookmark_max' => 1000,
-            'checkfriends' => 1,
-            'checkfriends_interval' => 600,
-            'directory' => 1,
-            'domainmap' => 1,
-            'edit_comments' => 1,
-            'emailpost' => 1,
-            'findsim' => 1,
-            'friendsfriendsview' => 1,
-            'friendspage_per_day' => 1,
-            'friendsviewupdate' => 1,
-            'full_rss' => 1,
-            'getselfemail' => 1,
-            google_analytics => 1,
-            'inbox_max' => 6000,
-            'interests' => 250,
-            'makepoll' => 1,
-            'mass_privacy' => 1,
-            'maxfriends' => 2000,
-            'mod_queue' => 100,
-            'mod_queue_per_poster' => 5,
-            'moodthemecreate' => 1,
-            popsubscriptions => 1,
-            's2layersmax' => 300,
-            's2props' => 1,
-            's2styles' => 1,
-            's2stylesmax' => 100,
-            'security_filter' => 1,
-            'subscriptions' => 1000,
-            'synd_create' => 1,
-            'tags_max' => 2000,
-            'textmessaging' => 1,
-            thread_expand_all => 1,
-            thread_expander => 1,
-            'tools_recent_comments_display' => 150,
-            'track_all_comments' => 1,
-            'track_defriended' => 1,
-            'track_pollvotes' => 1,
-            'track_thread' => 1,
-            'track_user_newuserpic' => 1,
-            'useremail' => 1,
-            'userlinks' => 50,
-            'usermessage_length' => 10000,
-            'userpics' => 150,
-            'userpicselect' => 1,
-            'viewmailqueue' => 1,
-            'xpost_accounts' => 5,
-            'paid' => 1,
-            'fastserver' => 1,
+            %CAP_PAID,
+            %CAP_PREMIUM,
         },
         '7' => {  # 0x80
             '_name' => 'Staff',
             '_key' => 'staff',
             '_visible_name' => 'Staff Account',
-            'activeentries' => 1,
-            'bookmark_max' => 1000,
-            'checkfriends' => 1,
-            'checkfriends_interval' => 600,
-            'directory' => 1,
-            'domainmap' => 1,
-            'edit_comments' => 1,
-            'emailpost' => 1,
-            'findsim' => 1,
-            'friendsfriendsview' => 1,
-            'friendspage_per_day' => 1,
-            'friendsviewupdate' => 1,
-            'full_rss' => 1,
-            'getselfemail' => 1,
-            google_analytics => 1,
-            'inbox_max' => 6000,
-            'interests' => 250,
-            'makepoll' => 1,
-            'mass_privacy' => 1,
-            'maxfriends' => 2000,
-            'mod_queue' => 100,
-            'mod_queue_per_poster' => 5,
-            'moodthemecreate' => 1,
-            popsubscriptions => 1,
-            's2layersmax' => 300,
-            's2props' => 1,
-            's2styles' => 1,
-            's2stylesmax' => 100,
-            'security_filter' => 1,
-            'subscriptions' => 1000,
-            'synd_create' => 1,
-            'tags_max' => 2000,
-            'textmessaging' => 1,
-            thread_expand_all => 1,
-            thread_expander => 1,
-            'tools_recent_comments_display' => 150,
-            'track_all_comments' => 1,
-            'track_defriended' => 1,
-            'track_pollvotes' => 1,
-            'track_thread' => 1,
-            'track_user_newuserpic' => 1,
-            'useremail' => 1,
-            'userlinks' => 50,
-            'usermessage_length' => 10000,
-            'userpics' => 150,
-            'userpicselect' => 1,
-            'viewmailqueue' => 1,
-            'xpost_accounts' => 9,
-            'paid' => 1,
-            'fastserver' => 1,
             'staff_headicon' => 1,
+            %CAP_PAID,
+            %CAP_PREMIUM,
         },
         8 => { _name => 'beta', _key => 'betafeatures' }, # 0x100
     );
@@ -633,106 +456,12 @@
         'theme' => 'negatives/black',
     };
 
-    ### /admin/fileedit setup
-    # If you are using the files in htdocs/inc and are frequently editing
-    # those, you may wish to put all of these files into the database.
-    # You can instruct BML to treat all <?_include?> statements as being
-    # pulled from memcached (failover to the database) by uncommenting:
-    # $FILEEDIT_VIA_DB = 1;
-    # Alternately, you can specify that only particular files should be
-    # kept in memcache and the database by doing:
-    # %FILEEDIT_VIA_DB = ( 'support_links' => 1, );
-
-    ### S2 Style Options
-
-    # which users' s2 layers should always run trusted un-cleaned?
-    #%S2_TRUSTED = ( '2' => 'whitaker' ); # userid => username
-
-
-    ###
-    ### Portal Options
-    ###
-
-    @PORTAL_BOXES = (
-                     'Birthdays',
-                     'UpdateJournal',
-                     'TextMessage',
-                     'PopWithFriends',
-                     'Friends',
-                     'Manage',
-                     'RecentComments',
-                     'NewUser',
-                     'FriendsPage',
-                     'FAQ',
-                     'Debug',
-                     'Note',
-                     'RandomUser',
-                     );
-
-    @PORTAL_BOXES_HIDDEN = (
-                            'Debug',
-                            );
-
-    %PORTAL_DEFAULTBOXSTATES = (
-                         'Birthdays' => {
-                             'added' => 1,
-                             'sort'  => 4,
-                             'col'   => 'R',
-                         },
-                         'FriendsPage' => {
-                             'added' => 1,
-                             'sort'  => 6,
-                             'col'   => 'L',
-                         },
-                         'FAQ' => {
-                             'added' => 1,
-                             'sort'  => 8,
-                             'col'   => 'R',
-                         },
-                         'Friends' => {
-                             'added' => 1,
-                             'sort'  => 10,
-                             'col'   => 'R',
-                         },
-                         'Manage' => {
-                             'added' => 1,
-                             'sort'  => 12,
-                             'col'   => 'L',
-                         },
-                         'PopWithFriends' => {
-                             'added' => 0,
-                             'col'   => 'R',
-                         },
-                         'RecentComments' => {
-                             'added' => 1,
-                             'sort'  => 10,
-                             'col'   => 'L',
-                         },
-                         'UpdateJournal' => {
-                             'added' => 1,
-                             'sort'  => 4,
-                             'col'   => 'L',
-                         },
-                         'NewUser' => {
-                             'added' => 1,
-                             'sort'  => 2,
-                             'col'   => 'L',
-                         },
-                         'TextMessage' => {
-                             'added'  => 1,
-                             'sort'   => 12,
-                             'col'    => 'R',
-                         },
-                         );
-
     # Setup support email address to not accept new emails.  Basically if an
     # address is specified below, any user who emails it out of the blue will
     # be sent back a copy of the specified file along with their email.  Users
     # will still be allowed to respond to emails from the support system, but
     # they can't open a request by emailing the address.  The value part of
-    # the hash is the name of an include file.  It will be loaded out of
-    # LJHOME/htdocs/inc.  See %FILEEDIT_VIA_DB for how to make it read
-    # from memcache/DB.
+    # the hash is the name of an include file.
     #%DENY_REQUEST_FROM_EMAIL = (
     #    "abuse\@$DOMAIN" => "bounce-abuse",
     #);
@@ -749,36 +478,6 @@
     # If you want to change the limit on how many bans a user can make, uncomment
     # the following line.  Default is 5000.
     #$MAX_BANS = 5000;
-
-    # If you are using MogileFS on your site for userpics or other purposes, you
-    # will need to define the following hash and complete the information in it.
-    #%MOGILEFS_CONFIG = (
-    #    hosts => [ '10.0.0.1:6001' ],
-    #    root => '/mnt/mogdata',
-    #    classes => {
-    #        'your_class' => 3,  # define any special MogileFS classes you need
-    #    },
-    #);
-
-    # If you have multiple internal networks and would like the MogileFS libraries
-    # to pick one network over the other, you can set the preferred IP list...
-    #%MOGILEFS_PREF_IP = (
-    #    10.0.0.1 => 10.10.0.1,
-    #);
-    #That says "if we try to connect to 10.0.0.1, instead try 10.10.0.1 first and
-    #then fall back to 10.0.0.1".
-
-    # In addition to setting up MogileFS above, you need to enable some options
-    # if you want to use MogileFS.
-    #$USERPIC_MOGILEFS = 1; # uncomment to put new userpics in MogileFS
-
-    # if you are using Perlbal to balance your web site, by default it uses
-    # reproxying to distribute the files itself.  however, in some situations
-    # you may not want to do that.  use this option to disable that on an
-    # item by item basis.
-    #%REPROXY_DISABLE = (
-    #    userpics => 1,
-    #);
 
     # Some people on portable devices may have troubles viewing the nice site
     # scheme you've setup, so you can specify that some user-agent prefixes
@@ -797,18 +496,18 @@
     # X-Forwarded-For headers that you can trust (eg Perlbal), enable this.  otherwise, don't!
     # $TRUST_X_HEADERS = 1;
 
-    # the following values allow you to control enabling your OpenID server and consumer
-    # support.
-    $OPENID_SERVER = 1;
-    $OPENID_CONSUMER = 1;
+    # By default, when using TRUST_X_HEADERS, all proxies using X-Forwarded-For
+    # are trusted and the real client IP is found first in the list. To trust
+    # only specific proxy IPs, write a sub that returns true when its input
+    # is a trusted proxy IP. In that case, trusted proxies will be removed from
+    # the end of X-Forwarded-For (or if supplied as the remote IP), and the
+    # real client IP will be found last in the resulting list.
+    # $IS_TRUSTED_PROXY = sub { $_[0] eq '192.168.1.1'; };
 
     # how many days to store random users for; after this many days they fall out of the table.
     # high traffic sites probably want a reasonably low number, whereas lower traffic sites might
     # want to set this higher to give a larger sample of users to select from.
     $RANDOM_USER_PERIOD = 7;
-
-    # turn on control/nav strip
-    $USE_CONTROL_STRIP = 1;
 
     # initial settings for new users
     %USER_INIT = (
@@ -839,12 +538,8 @@
         },
     );
 
-    # enable contextual hover
-    $CTX_POPUP = 1;
-
-    # page that 'noanon_ip' sysbanned users can access to get more information
-    # on why they're banned
-    # $BLOCKED_ANON_URI = '';
+    # default is plain (change to 'rich' if you want RTE by default)
+    $DEFAULT_EDITOR = 'plain';
 
     # pages where we want to see captcha
     %CAPTCHA_FOR = (

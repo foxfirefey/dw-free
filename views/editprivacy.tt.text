@@ -1,0 +1,40 @@
+;; -*- coding: utf-8 -*-
+.archive=Your <a [[aopts]]>journal archive</a> provides an easy way to browse through your posts by month.
+
+.button.update=Modify Entries
+
+.button.ya.rly=Yes, Modify these Entries
+
+.intro2=Change the privacy level of all entries during a specific period by choosing the start and end dates. You can also specify that only entries of a certain privacy level should be changed. <br><br><b>IMPORTANT NOTE</b>: This process can take time, up to a full day during times of heavy load -- it is <em>not</em> immediate. Do <em>not</em> rely on this tool in an emergency. If you urgently need to make your journal unavailable quickly, you should temporarily set it to <a [[aopts]]>deleted</a>. Even then, offsite search engines may still retain cached copies.
+
+.matching=<b>[[posts]] matching [[?posts|entry has|entries have]]</b> been found.
+
+.notified=The security level of your entries will be revised shortly. You'll be notified by email when the revision is complete.
+
+.privacy=Privacy
+
+.rusure=Are you sure you want to revise these entries?
+
+.timeframe=Timeframe
+
+.timeframe.all=All Dates
+
+.timeframe.range=Between
+
+.timeframe.range.end=End Date
+
+.timeframe.range.start=Start Date
+
+.title=Edit Journal Privacy
+
+.unable=Your account can't use this feature.
+
+.error.time=No timeframe selected
+
+.error.time.start=Start date is not a valid date
+
+.error.time.end=End date is not a valid date
+
+.error.security=Privacy levels are the same
+
+.error.password=Password Incorrect

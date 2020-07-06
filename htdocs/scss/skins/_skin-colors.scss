@@ -1,0 +1,238 @@
+/**
+* Site-wide skin-specific CSS colors
+* Set the color variables in the scheme-specific CSS file
+* Then @import _skin-colors.scss
+*
+* Only use mixins (@include), or variables
+* so that we pick up the colors / settings from the site skin
+* rather than hardcoding random colors here
+*/
+
+/**
+ * Links and a pseudo link class
+ */
+
+$anchor-font-color-visited: shade( $anchor-font-color, 20% ) !default;
+$page-title-color: $primary-color !default;
+$border-color: $input-border-color !default;
+
+a:visited {
+    color: $anchor-font-color-visited;
+}
+
+a.button:visited {
+    color: $primary-text-color;
+}
+
+a.button.secondary:visited {
+    color: $text-color;
+}
+
+.ljuser a {
+     color: $primary-color;
+}
+
+a:hover, a:active {
+    color: $anchor-font-color-hover;
+}
+
+/**
+ * Menu navigation
+ */
+
+nav {
+    background-color: $topbar-bg;
+}
+
+/**
+ * Header
+ */
+
+h1 {
+    color: $page-title-color;
+}
+
+// forms
+@import "skins/form-elements";
+
+// components
+$queue-font-color:     $form-font-color !default;
+$queue-bg-color:       $form-bg-color !default;
+
+.queue-item {
+    background-color: $queue-bg-color;
+    color: $queue-font-color;
+}
+
+// miscellaneous active elements
+$global-active-bg:     $primary-color !default;
+$global-active-font-color: $primary-text-color !default;
+a.active {
+    background-color: $global-active-bg;
+    color: $global-active-font-color;
+
+    & a {
+        color: $global-active-font-color;
+
+        &:hover {
+            background-color: $global-active-font-color;
+            color: $global-active-bg;
+        }
+    }
+}
+
+.th.active {
+    border-color: $global-active-bg;
+}
+
+// color-holding classes
+.border {
+    border: 1px solid $border-color;
+}
+
+.theme-color-on-hover {
+    &:hover, &:focus {
+        color: $primary-color;
+
+        .fi-icon {
+            color: $primary-color;
+        }
+    }
+}
+
+// autocomplete
+.autocomplete-container {
+    background-color: $input-bg-color;
+
+    &.focus {
+        background-color: $input-focus-bg-color;
+    }
+}
+
+li.token {
+    background-color: $input-bg-color;
+    color: $primary-color;
+    border-color: $secondary-button-border-color;
+
+    &:hover {
+        border-color: $primary-color;
+    }
+}
+
+// Enabled and disabled text
+div.enabled, div.enabled * { color: $text-color; }
+div.disabled, div.disabled * { color: scale-color($text-color, $lightness: 50%); }
+
+// date and time picker
+.picker__holder {
+    background-color: $reveal-modal-bg;
+    border: 1px solid $reveal-border-color;
+}
+
+.picker--date {
+    .picker__table tbody tr {
+        background-color: $table-bg;
+    }
+    .picker__year {
+        color: $inactive-color;
+    }
+    .picker__nav--disabled {
+        color: $inactive-color;
+    }
+    .picker__day--highlighted {
+      border-color: $global-active-bg;
+    }
+    .picker__day--outfocus {
+        color: $inactive-color
+    }
+    .picker__day--infocus:hover,
+    .picker__day--outfocus:hover,
+    .picker__day--selected,
+    .picker__day--selected:hover,
+    .picker--focused .picker__day--selected {
+        color: $global-active-font-color;
+        background: $global-active-bg;
+    }
+}
+
+.picker--time {
+    .picker__list-item {
+        border-bottom: 1px solid $border-color;
+        border-top: 1px solid $border-color;
+
+        background: $form-bg-color;
+        color: $form-font-color;
+
+        &:hover {
+              color: $global-active-font-color;
+              background: $global-active-bg;
+              border-color: $border-color;
+        }
+  }
+
+    /* Highlighted and hovered/focused time */
+    .picker__list-item--highlighted {
+        border-color: $global-active-bg;
+    }
+
+    /* Selected and hovered/focused time */
+    .picker__list-item--selected,
+    .picker__list-item--selected:hover,
+    .picker--focused .picker__list-item--selected {
+        background: $global-active-bg;
+        color: $global-active-font-color;
+    }
+
+    /* Disabled time */
+    .picker__list-item--disabled,
+    .picker__list-item--disabled:hover,
+    .picker--focused .picker__list-item--disabled {
+        border-color: $inactive-color;
+        color: $inactive-color;
+        cursor: default;
+        z-index: auto;
+    }
+}
+
+// progress meter
+.progress-meter {
+    li:before {
+        background-color: lighten( tint( $primary-color, 50% ), 10% );
+        color: $primary-text-color;
+    }
+
+    .current:before {
+        background-color: $primary-color;
+        color: $primary-text-color;
+    }
+
+    .finished {
+        color: $inactive-color;
+    }
+    .finished:before {
+        background-color: tint( $inactive-color, 50% );
+        color: $inactive-color;
+    }
+}
+
+// support boxes
+.bluebox {
+    background-color: $_support-bg-blue;
+    border-color: $_support-fg-blue;
+}
+.greenbox {
+    background-color: $_support-bg-green;
+    border-color: $_support-fg-green;
+}
+
+// replacement colors for jquery-ui elements
+@import "skins/jquery-ui-theme";
+
+// alternating row colors
+.odd, tr.odd th, tr.odd td {
+    background-color: $background_color;
+}
+
+.even, tr.even th, tr.even td {
+    background-color: darken($background_color, 5%);
+}

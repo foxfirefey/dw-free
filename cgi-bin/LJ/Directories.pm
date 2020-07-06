@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 #
 # LJ::Directories
-# 
+#
 # Authors:
 #      Andrea Nall <anall@andreanall.com>
 #
@@ -37,7 +37,7 @@ sub get_all_paths {
     }
 
     return grep { -e $_ } map { $_ . "/" . $dirname } uniq @dirs;
-};
+}
 
 sub get_all_files {
     return grep { -f $_ } get_all_paths(@_);
@@ -65,18 +65,14 @@ my %SCOPE_ORDER = (
 my @SCOPES =
     sort { $SCOPE_ORDER{$b} <=> $SCOPE_ORDER{$a} } keys %SCOPE_ORDER;
 
-lib->import( $LJ::HOME . "/src/DSMS/lib" );
+lib->import( $ENV{LJHOME} . "/src/DSMS/lib" );
 
 {
-    my @dirs = ();
-    my $ext_path = abs_path( $LJ::HOME . "/ext" );
+    my @dirs     = ();
+    my $ext_path = abs_path( $ENV{LJHOME} . "/ext" );
     die "ext directory missing" unless defined $ext_path;
 
-    my %dir_scopes = (
-        'general' => [
-            abs_path($LJ::HOME)
-        ]
-    );
+    my %dir_scopes = ( 'general' => [ abs_path( $ENV{LJHOME} ) ] );
 
     foreach ( glob( $ext_path . "/*" ) ) {
         my $dir = abs_path($_);
@@ -94,7 +90,8 @@ lib->import( $LJ::HOME . "/src/DSMS/lib" );
 
     @FILE_DIRS = map { @{ $dir_scopes{$_} || [] } } @SCOPES;
 
-    foreach my $dir ( reverse map { abs_path($_."/cgi-bin") } @FILE_DIRS ) {
+    use lib "$ENV{LJHOME}/extlib/lib/perl5";
+    foreach my $dir ( reverse map { abs_path( $_ . "/cgi-bin" ) } @FILE_DIRS ) {
         lib->import($dir) if defined $dir;
     }
 }

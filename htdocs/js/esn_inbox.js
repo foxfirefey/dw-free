@@ -3,7 +3,7 @@ var ESN_Inbox = {
     "selected_qids": []
 };
 
-DOM.addEventListener(window, "load", function (evt) {
+document.addEventListener("DOMContentLoaded", function (evt) {
   for (var i=0; i<folders.length; i++) {
       var folder = folders[i];
 
@@ -87,7 +87,8 @@ ESN_Inbox.initContentExpandButtons = function (folder) {
     var buttons = DOM.filterElementsByClassName(domElements, "InboxItem_Expand") || [];
 
     Array.prototype.forEach.call(buttons, function (button) {
-        DOM.addEventListener(button, "click", function (evt) {
+        var link = DOM.getFirstAncestorByTagName(button, "a");
+        DOM.addEventListener(link, "click", function (evt) {
             if (evt.shiftKey) {
                 // if shift key, make all like inverse of current button
                 var expand = button.src == Site.imgprefix + "/collapse.gif" ? 'collapse' : 'expand';

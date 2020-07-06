@@ -19,9 +19,7 @@ body<=
 <?_code
 {
     use strict;
-    use vars qw(%FORM);
-
-    LJ::set_active_crumb('supportappend');
+    use vars qw(%FORM %POST);
 
     my $r = DW::Request->get;
 
@@ -160,7 +158,7 @@ body<=
                 $email = $eu->email_raw if $eu;
             }
 
-            LJ::check_email($email, \@email_errors);
+            LJ::check_email( $email, \@email_errors, \%POST );
             @email_errors = map { "<strong>$email:</strong> $_" } @email_errors;
             return LJ::bad_input(@email_errors) if @email_errors;
 

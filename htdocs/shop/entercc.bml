@@ -11,7 +11,7 @@
 # Authors:
 #      Mark Smith <mark@dreamwidth.org>
 #
-# Copyright (c) 2010 by Dreamwidth Studios, LLC.
+# Copyright (c) 2010-2014 by Dreamwidth Studios, LLC.
 #
 # This program is free software; you may redistribute it and/or modify it under
 # the same terms as Perl itself. For a copy of the license, please reference
@@ -24,18 +24,10 @@ body<=
     use strict;
     use vars qw/ %GET %POST $title /;
     use Business::CreditCard;
+    use DW::Countries;
 
     return BML::redirect( "$LJ::SITEROOT/" )
         unless LJ::is_enabled( 'payments' );
-
-    # VERY IMPORTANT
-    die "SSL must be enabled."
-        unless $LJ::IS_DEV_SERVER || $LJ::USE_SSL;
-
-    # now, redirect them to the SSL page just in case they got here without SSL
-    # actually being on...
-    return BML::redirect( "$LJ::SSLROOT/shop/entercc" )
-        unless $LJ::IS_DEV_SERVER || $LJ::IS_SSL;
 
     $title = $ML{'.title'};
 
@@ -75,7 +67,8 @@ body<=
 
         # load country codes, and US states
         my ( %countries, %usstates );
-        LJ::load_codes( { country => \%countries } );
+        DW::Countries->load( \%countries );
+        delete $countries{UK}; # UK is also GB; don't display both
         LJ::load_codes( { state => \%usstates } );
 
         # accepted credit card list.  this should be populated by the hooks.
@@ -129,6 +122,7 @@ body<=
         }
         $out .= "</table><br /><?p ";
         $out .= BML::ml( '.confirm.para', { amount => $cart->display_total_cash, sitename => $LJ::SITECOMPANY } );
+        $out .= LJ::Hooks::run_hook( 'cc_charge_from' );
         $out .= " p?><br /><input type='submit' value='";
         $out .= BML::ml( '.confirm.button', { amount => $cart->display_total_cash } );
         $out .= "' /></form>";

@@ -1,0 +1,19 @@
+.community-menu {
+  font-size: .8rem;
+
+  form {
+    label,
+    input,
+    select {
+      margin-bottom: 0;
+    }
+
+    label {
+      font-weight: bold;
+    }
+
+    select {
+      padding-right: 1rem;
+    }
+  }
+}

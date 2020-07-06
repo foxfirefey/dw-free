@@ -1,0 +1,38 @@
+[%# Find feed duplicates
+
+Authors:
+    Andrea Nall <anall@andreanall.com>
+
+Copyright (c) 2015 by Dreamwidth Studios, LLC.
+
+This program is free software; you may redistribute it and/or modify it under
+the same terms as Perl itself.  For a copy of the license, please reference
+'perldoc perlartistic' or 'perldoc perlgpl'.
+%]
+[%- sections.title = '.admin.link' | ml -%]
+[%- sections.head = BLOCK -%]
+<style type="text/css">
+td, th { padding: 4px; }
+</style>
+[%- END -%]
+
+[%- IF data.size == 0 -%]
+<p>[% '.noduplicates' | ml %]</p>
+[%- ELSE -%]
+<p>[% '.feedcount' | ml(count = data.size) %]</p>
+<table summary=''>
+<thead>
+<tr>
+    <th>Count</th>
+    <th>Token</th>
+</tr>
+<tbody id="table_data">
+[%- FOREACH feed IN data -%]
+<tr>
+    <td>[% feed.0 %]</td>
+    <td><a href="/admin/feeds/merge?token=[% feed.1 | uri %]">[% feed.1 %]</a></td>
+</tr>
+[%- END -%]
+</tbody>
+</table>
+[%- END -%]

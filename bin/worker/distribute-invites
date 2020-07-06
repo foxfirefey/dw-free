@@ -14,9 +14,10 @@
 # 'perldoc perlartistic' or 'perldoc perlgpl'.
 
 use strict;
-use warnings;
+BEGIN {
+    require "$ENV{LJHOME}/cgi-bin/ljlib.pl";
+}
 
-use lib "$ENV{LJHOME}/cgi-bin";
 use LJ::Worker::TheSchwartz;
 use DW::Worker::DistributeInvites;
 

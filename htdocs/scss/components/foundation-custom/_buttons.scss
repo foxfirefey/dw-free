@@ -1,0 +1,10 @@
+@import "foundation/components/buttons";
+
+@include exports("button-custom") {
+  @if $include-html-button-classes {
+        button, .button {
+            @include inset-shadow();
+            @include radius($button-radius);
+        }
+    }
+}

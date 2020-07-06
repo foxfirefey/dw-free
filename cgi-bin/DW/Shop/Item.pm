@@ -33,7 +33,7 @@ DW::Shop::Item - base class containing basic behavior for items to be sold in th
 
 =head2 C<< $class->new(  [ $opts ] ) >>
 
-Instantiates an item to be purchased in the shop. The item must be defined in the 
+Instantiates an item to be purchased in the shop. The item must be defined in the
 %LJ::SHOP hash in your config file.
 
 Arguments:
@@ -50,33 +50,39 @@ Arguments:
 =item reason => personal note from sender to target
 
 The type is required. Also, one target_* argument is required; it may be either
-a target_userid or a target_email. All other arguments are optional. 
+a target_userid or a target_email. All other arguments are optional.
 
-Subclasses must override this function to set the type. Subclasses may also do any 
-other modifications necessary when instantiating itself. See DW::Shop::Item::Account 
+Subclasses must override this function to set the type. Subclasses may also do any
+other modifications necessary when instantiating itself. See DW::Shop::Item::Account
 for an example.
 
 =cut
 
 sub new {
     my ( $class, %args ) = @_;
-    return undef unless exists $LJ::SHOP{$args{type}};
+    return undef unless exists $LJ::SHOP{ $args{type} };
 
-    # from_userid will be 0 if the sender isn't logged in
-    return undef unless $args{from_userid} == 0 || LJ::load_userid( $args{from_userid} );
+    # from_userid will be 0 or undef if the sender isn't logged in
+    # but if we have a userid, and it doesn't load properly, bail out here.
+    return undef if $args{from_userid} && !LJ::load_userid( $args{from_userid} );
 
     # now do validation.  since new is only called when the item is being added
     # to the shopping cart, then we are comfortable doing all of these checks
     # on things at the time this item is put together
     if ( my $uid = $args{target_userid} ) {
+
         # userid needs to exist
-        return undef unless LJ::load_userid( $uid );
-    } elsif ( my $email = $args{target_email} ) {
+        return undef unless LJ::load_userid($uid);
+    }
+    elsif ( my $email = $args{target_email} ) {
+
         # email address must be valid
         my @email_errors;
-        LJ::check_email( $email, \@email_errors );
+        LJ::check_email( $email, \@email_errors,
+            { force_spelling => delete $args{force_spelling} } );
         return undef if @email_errors;
-    } else {
+    }
+    else {
         return undef;
     }
 
@@ -97,12 +103,13 @@ sub new {
     }
 
     # looks good
-    my $confargs = $LJ::SHOP{$args{type}};  # arrayref
+    my $confargs = $LJ::SHOP{ $args{type} };    # arrayref
 
     # points and vgifts have empty args, which will cause undef warnings
-    $confargs = [0,0,0,0] unless scalar @$confargs;
+    $confargs = [ 0, 0, 0, 0 ] unless scalar @$confargs;
 
     return bless {
+
         # user supplied arguments (close enough)
         cost_cash   => $confargs->[0] + 0.00,
         cost_points => $confargs->[3] + 0,
@@ -114,10 +121,9 @@ sub new {
     }, $class;
 }
 
-
 =head2 C<< $self->apply_automatically >>
 
-True if you want the item to be applied via the paidstatus worker, and false 
+True if you want the item to be applied via the paidstatus worker, and false
 if you wish to apply the item yourself (usually triggered by a user action).
 
 Subclasses may override.
@@ -128,10 +134,10 @@ sub apply_automatically { 1 }
 
 =head2 C<< $self->apply >>
 
-Called when we are told we need to apply this item, i.e., turn it on. Note that we 
+Called when we are told we need to apply this item, i.e., turn it on. Note that we
 update ourselves, but it's up to the cart to make sure that it saves.
 
-Subclasses may override this method, but a better approach would be to override the 
+Subclasses may override this method, but a better approach would be to override the
 internal $self->_apply method.
 
 =cut
@@ -149,9 +155,8 @@ sub apply {
             unless $ddate le $cur;
     }
 
-    return $self->_apply( @_ );
+    return $self->_apply(@_);
 }
-
 
 =head2 C<< $self->_apply >>
 
@@ -164,7 +169,6 @@ Subclasses must override this for item-specific behavior.
 sub _apply {
     croak "Cannot apply shop item; this method must be override by a subclass.";
 }
-
 
 =head2 C<< $self->unapply >>
 
@@ -210,7 +214,6 @@ sub can_be_added {
     return 1;
 }
 
-
 =head2 C<< $self->can_have_reason( [ %opts ] ) >>
 
 Returns 1 if this item is allowed to have a personal note from the
@@ -241,15 +244,14 @@ sub conflicts {
     my ( $self, $item ) = @_;
 
     # if either item are set as "does not conflict" then never say yes
-    return if
-        $self->cannot_conflict || $item->cannot_conflict;
+    return
+        if $self->cannot_conflict || $item->cannot_conflict;
 
     # subclasses can add additional logic here
 
     # guess we allow it
     return undef;
 }
-
 
 =head2 C<< $self->t_html( [ %opts ] ) >>
 
@@ -263,12 +265,13 @@ sub t_html {
     my ( $self, %opts ) = @_;
 
     if ( my $uid = $self->t_userid ) {
-        my $u = LJ::load_userid( $uid );
+        my $u = LJ::load_userid($uid);
         return $u->ljuser_display
             if $u;
         return "<strong>invalid userid $uid</strong>";
 
-    } elsif ( my $email = $self->t_email ) {
+    }
+    elsif ( my $email = $self->t_email ) {
         return "<strong>$email</strong>";
 
     }
@@ -300,7 +303,6 @@ sub name_html {
     return $_[0]->name_text;
 }
 
-
 =head2 C<< $self->note >>
 
 Render a note to the user about this item.
@@ -328,7 +330,7 @@ sub short_desc {
     my $desc = $opts{nohtml} ? $self->name_text : $self->name_html;
 
     my $for = $self->t_email;
-    unless ( $for ) {
+    unless ($for) {
         my $u = LJ::load_userid( $self->t_userid );
         $for = $u->user
             if $u;
@@ -337,7 +339,6 @@ sub short_desc {
     # FIXME: english strip
     return "$desc for $for";
 }
-
 
 =head2 C<< $self->id( $id ) >>
 
@@ -350,7 +351,6 @@ sub id {
     return $_[0]->{id} = $_[1];
 }
 
-
 =head2 C<< $self->cartid( $cartid ) >>
 
 Gets/sets.
@@ -361,7 +361,6 @@ sub cartid {
     return $_[0]->{cartid} unless defined $_[1];
     return $_[0]->{cartid} = $_[1];
 }
-
 
 =head2 C<< $self->t_userid( $target_userid ) >>
 
@@ -374,23 +373,40 @@ sub t_userid {
     return $_[0]->{target_userid} = $_[1];
 }
 
-
 =head2 C<< $self->from_html >>
 
-Display who this is from.
+Display who this is from, using ljuser_display.
+
+=head2 C<< $self->from_text >>
+
+Display who this is from, using display_name.
 
 =cut
 
 sub from_html {
     my $self = $_[0];
 
-    return $self->{from_name} if $self->{from_name};
+    my $from = $self->_from_other;
+    return LJ::isu($from) ? $from->ljuser_display : LJ::ehtml($from);
+}
+
+sub from_text {
+    my $self = $_[0];
+
+    my $from = $self->_from_other;
+    return LJ::isu($from) ? $from->display_name : $from;
+}
+
+sub _from_other {
+    my $self = $_[0];
+
+    return LJ::Lang::ml('widget.shopcart.anonymous') if $self->anonymous;
+    return $self->from_name if $self->from_name;
 
     my $from_u = LJ::load_userid( $self->from_userid );
-    return LJ::Lang::ml( 'widget.shopcart.anonymous' )
-        if $self->anonymous || ! LJ::isu( $from_u );
+    return LJ::Lang::ml('error.nojournal') unless LJ::isu($from_u);
 
-    return $from_u->ljuser_display;
+    return $from_u;
 }
 
 =head2 C<< $self->paid_cash >>
@@ -408,7 +424,7 @@ sub paid_cash {
     # we try to promote the item to a new style.  we don't know if this is
     # going to get saved in the cart or not ...
     if ( exists $self->{cost} ) {
-        $self->{paid_cash} = delete( $self->{cost} ) + 0.00;
+        $self->{paid_cash}   = delete( $self->{cost} ) + 0.00;
         $self->{paid_points} = 0;
     }
 
@@ -439,11 +455,14 @@ sub display_paid {
     my $self = $_[0];
     if ( $self->paid_cash && $self->paid_points ) {
         return sprintf( '$%0.2f USD and %d points', $self->paid_cash, $self->paid_points );
-    } elsif ( $self->paid_cash ) {
+    }
+    elsif ( $self->paid_cash ) {
         return sprintf( '$%0.2f USD', $self->paid_cash );
-    } elsif ( $self->paid_points ) {
+    }
+    elsif ( $self->paid_points ) {
         return sprintf( '%d points', $self->paid_points );
-    } else {
+    }
+    else {
         return 'free';
     }
 }
@@ -486,8 +505,8 @@ Returns whether this item should be gifted anonymously, or credited to the sende
 
 =head2 C<< $self->noremove >>
 
-Returns whether this item may or may not be removed from the cart. May be used by 
-promotions which automatically add a promo item to a user's cart, to prevent the 
+Returns whether this item may or may not be removed from the cart. May be used by
+promotions which automatically add a promo item to a user's cart, to prevent the
 promo item from being removed
 
 =head2 C<< $self->from_name >>
@@ -501,17 +520,17 @@ Optional note from the sender explaining the reason for the gift.
 
 =cut
 
-sub display_paid_cash { sprintf( '$%0.2f USD', $_[0]->paid_cash ) }
-sub display_paid_points { sprintf( '%d points', $_[0]->paid_points ) }
-sub applied      { return $_[0]->{applied};         }
-sub cost_points  { return $_[0]->{cost_points};     }
-sub t_email      { return $_[0]->{target_email};    }
-sub from_userid  { return $_[0]->{from_userid};     }
-sub deliverydate { return $_[0]->{deliverydate};    }
-sub anonymous    { return $_[0]->{anonymous};       }
-sub noremove     { return $_[0]->{noremove};        }
-sub from_name    { return $_[0]->{from_name};       }
-sub reason       { return $_[0]->{reason};          }
+sub display_paid_cash   { sprintf( '$%0.2f USD', $_[0]->paid_cash ) }
+sub display_paid_points { sprintf( '%d points',  $_[0]->paid_points ) }
+sub applied             { return $_[0]->{applied}; }
+sub cost_points         { return $_[0]->{cost_points}; }
+sub t_email             { return $_[0]->{target_email}; }
+sub from_userid         { return $_[0]->{from_userid}; }
+sub deliverydate        { return $_[0]->{deliverydate}; }
+sub anonymous           { return $_[0]->{anonymous}; }
+sub noremove            { return $_[0]->{noremove}; }
+sub from_name           { return $_[0]->{from_name}; }
+sub reason              { return $_[0]->{reason}; }
 
 # this has to work with old items (pre-points) too
 sub cost_cash {
@@ -519,7 +538,6 @@ sub cost_cash {
     return $self->{cost} + 0.00 if exists $self->{cost};
     return $self->{cost_cash} + 0.00;
 }
-
 
 =head2 C<< $self->cannot_conflict >>
 
@@ -530,6 +548,6 @@ Subclasses may override.
 
 =cut
 
-sub cannot_conflict  { return $_[0]->{cannot_conflict};  }
+sub cannot_conflict { return $_[0]->{cannot_conflict}; }
 
 1;

@@ -5,7 +5,7 @@
 # Authors:
 #      Afuna <coder.dw@afunamatata.com>
 #
-# Copyright (c) 2010 by Dreamwidth Studios, LLC.
+# Copyright (c) 2010-2014 by Dreamwidth Studios, LLC.
 #
 # This program is free software; you may redistribute it and/or modify it under
 # the same terms as Perl itself. For a copy of the license, please reference
@@ -35,6 +35,7 @@ DW::RenameToken - Token which can be applied to a journal to change the username
   # try to use...
   my $token_obj = DW::RenameToken->new( token => $POST{token} );
   if ( $token_obj->applied ) { print "Already used" }
+  elsif ( $token_obj->revoked ) { print "Revoked by a site admin" }
   else { $token_obj->apply( userid => $id_of_the_journal_being_renamed, from => $oldname, to => $newname ) }
 
 =cut
@@ -44,11 +45,11 @@ use warnings;
 
 use DW::Shop::Cart;
 
-use fields qw(renid auth cartid ownerid renuserid fromuser touser rendate);
+use fields qw(renid auth cartid ownerid renuserid fromuser touser rendate status);
 
 use constant { AUTH_LEN => 13, ID_LEN => 7 };
 use constant DIGITS => qw(A B C D E F G H J K L M N P Q R S T U V W X Y Z 2 3 4 5 6 7 8 9);
-use constant { TOKEN_LEN => AUTH_LEN + ID_LEN, DIGITS_LEN => scalar( DIGITS ) };
+use constant { TOKEN_LEN => AUTH_LEN + ID_LEN, DIGITS_LEN => scalar(DIGITS) };
 
 =head1 API
 
@@ -73,30 +74,33 @@ sub create_token {
         or die "Unable to connect to database.\n";
 
     my $sth = $dbh->prepare(
-        q{INSERT INTO renames (renid, auth, cartid, ownerid)
-          VALUES (NULL, ?, ?, ?)}
-    )
-        or die "Unable to allocate statement handle.\n";
+        q{INSERT INTO renames (renid, auth, cartid, ownerid, status)
+          VALUES (NULL, ?, ?, ?, 'U')}
+    ) or die "Unable to allocate statement handle.\n";
 
-    my $uid = $opts{systemtoken} ? 0 : $opts{ownerid};
-    my $cartid = $opts{cartid};
-    my $authcode = LJ::make_auth_code( AUTH_LEN );
+    my $uid      = $opts{systemtoken} ? 0 : $opts{ownerid};
+    my $cartid   = $opts{cartid};
+    my $authcode = LJ::make_auth_code(AUTH_LEN);
 
     $sth->execute( $authcode, $cartid, $uid );
     die "Unable to create rename token: " . $dbh->errstr . "\n"
         if $dbh->err;
 
-    return bless( {
-        renid   => $dbh->{mysql_insertid},
-        auth    => $authcode,
-        cartid  => $cartid,
-        ownerid => $uid,
-    }, "DW::RenameToken" );
+    return bless(
+        {
+            renid   => $dbh->{mysql_insertid},
+            auth    => $authcode,
+            cartid  => $cartid,
+            ownerid => $uid,
+            status  => 'U'
+        },
+        "DW::RenameToken"
+    );
 }
 
 sub create {
     my ( $class, %opts ) = @_;
-    return $class->create_token( %opts )->token;
+    return $class->create_token(%opts)->token;
 }
 
 =head2 C<< $class->valid_format( string => tokentovalidate ) >>
@@ -104,15 +108,16 @@ sub create {
 Verifies if this could be a valid format for the rename token. Checks length and characters.
 
 =cut
+
 sub valid_format {
     my ( $class, %opts ) = @_;
 
-    my $string = uc $opts{string};
+    my $string = uc( $opts{string} // '' );
     return 0 unless length $string == TOKEN_LEN;
 
     my %valid_digits = map { $_ => 1 } DIGITS;
     my @string_array = split( //, $string );
-    foreach my $char ( @string_array ) {
+    foreach my $char (@string_array) {
         return 0 unless $valid_digits{$char};
     }
 
@@ -135,13 +140,15 @@ sub new {
     return undef unless $class->valid_format( string => $opts{token} );
 
     my ( $id, $auth ) = $class->decode( $opts{token} );
-    my $renametoken = $dbr->selectrow_hashref( "SELECT renid, auth, cartid, ownerid, renuserid, fromuser, touser, rendate FROM renames ".
-                                      "WHERE renid=? AND auth=?",
-                                      undef, $id, $auth);
+    my $renametoken = $dbr->selectrow_hashref(
+"SELECT renid, auth, cartid, ownerid, renuserid, fromuser, touser, rendate, status FROM renames "
+            . "WHERE renid=? AND auth=?",
+        undef, $id, $auth
+    );
 
     return undef unless defined $renametoken;
 
-    my $ret = fields::new( $class );
+    my $ret = fields::new($class);
     while ( my ( $k, $v ) = each %$renametoken ) {
         $ret->{$k} = $v;
     }
@@ -155,6 +162,7 @@ sub new {
 Return a list of unused tokens for this user.
 
 =cut
+
 sub by_owner_unused {
     my ( $class, %opts ) = @_;
 
@@ -163,24 +171,25 @@ sub by_owner_unused {
 
     my $dbr = LJ::get_db_reader();
 
-    my $sth = $dbr->prepare( "SELECT renid, auth, cartid, ownerid, renuserid, fromuser, touser, rendate FROM renames " .
-                             "WHERE ownerid=? AND renuserid=0" )
+    my $sth = $dbr->prepare(
+"SELECT renid, auth, cartid, ownerid, renuserid, fromuser, touser, rendate, status FROM renames "
+            . "WHERE ownerid=? AND status='U'" )
         or die "Unable to retrieve list of unused rename tokens: " . $dbr->errstr;
 
-    $sth->execute( $userid )
+    $sth->execute($userid)
         or die "Unable to retrieve list of unused rename tokens: " . $sth->errstr;
 
     my @tokens;
 
-    while (my $token = $sth->fetchrow_hashref) {
-        my $ret = fields::new( $class );
-        while (my ($k, $v) = each %$token) {
+    while ( my $token = $sth->fetchrow_hashref ) {
+        my $ret = fields::new($class);
+        while ( my ( $k, $v ) = each %$token ) {
             $ret->{$k} = $v;
         }
         push @tokens, $ret;
     }
 
-    return @tokens ? [ @tokens ] : undef;
+    return @tokens ? [@tokens] : undef;
 }
 
 =head2 C<< $class->by_username( user => username ) >>
@@ -199,8 +208,9 @@ sub by_username {
     return unless $user;
 
     my $dbr = LJ::get_db_reader();
-    my $sth = $dbr->prepare( "SELECT renid, auth, cartid, ownerid, renuserid, fromuser, touser, rendate FROM renames " .
-                             "WHERE fromuser=? OR touser=?" )
+    my $sth = $dbr->prepare(
+"SELECT renid, auth, cartid, ownerid, renuserid, fromuser, touser, rendate, status FROM renames "
+            . "WHERE fromuser=? OR touser=?" )
         or die "Unable to retrieve list of rename tokens involving a username";
 
     $sth->execute( $user, $user )
@@ -208,15 +218,15 @@ sub by_username {
 
     my @tokens;
 
-    while (my $token = $sth->fetchrow_hashref) {
-        my $ret = fields::new( $class );
-        while (my ($k, $v) = each %$token) {
+    while ( my $token = $sth->fetchrow_hashref ) {
+        my $ret = fields::new($class);
+        while ( my ( $k, $v ) = each %$token ) {
             $ret->{$k} = $v;
         }
         push @tokens, $ret;
     }
 
-    return @tokens ? [ @tokens ] : undef;
+    return @tokens ? [@tokens] : undef;
 }
 
 =head2 C<< $class->_encode( $id, $auth ) >>
@@ -228,7 +238,7 @@ all-uppercase rename token.
 
 sub _encode {
     my ( $class, $id, $auth ) = @_;
-    return uc( $auth ) . $class->_id_encode( $id );
+    return uc($auth) . $class->_id_encode($id);
 }
 
 =head2 C<< $class->decode( $invite ) >>
@@ -239,7 +249,8 @@ Internal. Given a rename token, break it down into its component parts: a rename
 
 sub decode {
     my ( $class, $token ) = @_;
-    return ( $class->_id_decode( substr( $token, AUTH_LEN, ID_LEN ) ), uc( substr( $token, 0, AUTH_LEN ) ) );
+    return ( $class->_id_decode( substr( $token, AUTH_LEN, ID_LEN ) ),
+        uc( substr( $token, 0, AUTH_LEN ) ) );
 }
 
 =head2 C<< $class->_id_encode( $num ) >>
@@ -253,16 +264,16 @@ that are not easily mistaken for each other.
 sub _id_encode {
     my ( $class, $num ) = @_;
     my $id = "";
-    while ( $num ) {
+    while ($num) {
         my $dig = $num % DIGITS_LEN;
-        $id = (DIGITS)[$dig] . $id;
-        $num = ($num - $dig) / DIGITS_LEN;
+        $id  = (DIGITS)[$dig] . $id;
+        $num = ( $num - $dig ) / DIGITS_LEN;
     }
-    return ( (DIGITS)[0] x ( ID_LEN - length( $id ) ) . $id );
+    return ( (DIGITS)[0] x ( ID_LEN - length($id) ) . $id );
 }
 
 my %val;
-@val{(DIGITS)} = 0..DIGITS_LEN;
+@val{ (DIGITS) } = 0 .. DIGITS_LEN;
 
 =head2 C<< $class->_id_decode( $id ) >>
 
@@ -272,10 +283,10 @@ the original decimal number.
 =cut
 
 sub _id_decode {
-    my ($class, $id) = @_;
-    $id = uc( $id );
+    my ( $class, $id ) = @_;
+    $id = uc($id);
 
-    my $num = 0;
+    my $num   = 0;
     my $place = 0;
     foreach my $d ( split //, $id ) {
         return 0 unless exists $val{$d};
@@ -283,7 +294,6 @@ sub _id_decode {
     }
     return $num;
 }
-
 
 =head2 C<< $self->apply( %opts ) >>
 
@@ -296,20 +306,34 @@ sub apply {
 
     # modify self
     my $dbh = LJ::get_db_writer();
-    $dbh->do( "UPDATE renames SET renuserid=?, fromuser=?, touser=?, rendate=? WHERE renid=?",
-        undef, $opts{userid}, $opts{from}, $opts{to}, time, $self->id );
+    $dbh->do(
+"UPDATE renames SET renuserid=?, fromuser=?, touser=?, rendate=?, status = 'A' WHERE renid=?",
+        undef, $opts{userid}, $opts{from}, $opts{to}, time, $self->id
+    );
 
     # modify status in the cart
     if ( $self->cartid ) {
         my $cart = DW::Shop::Cart->get_from_cartid( $self->cartid );
         foreach my $item ( @{ $cart->items } ) {
-            next unless $item->isa( "DW::Shop::Item::Rename" ) && $item->token eq $self->token;
+            next unless $item->isa("DW::Shop::Item::Rename") && $item->token eq $self->token;
             $item->apply;
         }
 
         $cart->save;
     }
 
+    return 1;
+}
+
+=head2 C<< $self->revoke >>
+
+Mark as revoked in-DB
+
+=cut
+
+sub revoke {
+    my $dbh = LJ::get_db_writer();
+    $dbh->do( "UPDATE renames SET status = 'R' WHERE renid=?", undef, $_[0]->id );
     return 1;
 }
 
@@ -324,38 +348,43 @@ sub details {
     my $self = $_[0];
 
     my $u = LJ::load_userid( $self->renuserid );
-    return unless LJ::isu( $u );
-    return if $u->is_expunged; # can't retrieve the info from userlog
+    return unless LJ::isu($u);
+    return if $u->is_expunged;    # can't retrieve the info from userlog
 
     # get more than we need and filter, just in case the timestamps don't match up perfectly
     my $results = $u->selectall_arrayref(
         "SELECT userid, logtime, action, extra FROM userlog "
-        . "WHERE userid=? AND action='rename' AND logtime >= ? ORDER BY logtime LIMIT 3",
-        { Slice => {} } , $u->userid, $self->rendate );
+            . "WHERE userid=? AND action='rename' AND logtime >= ? ORDER BY logtime LIMIT 3",
+        { Slice => {} }, $u->userid, $self->rendate
+    );
 
-    foreach my $row ( @{$results || []} ) {
+    foreach my $row ( @{ $results || [] } ) {
         my $extra = {};
         LJ::decode_url_string( $row->{extra}, $extra );
 
         if ( $extra->{from} eq $self->fromuser && $extra->{to} eq $self->touser ) {
             $row->{from} = $extra->{from};
-            $row->{to} = $extra->{to};
+            $row->{to}   = $extra->{to};
 
             foreach ( split( ":", $extra->{redir} ) ) {
-                $row->{redirect}->{ {
-                        J => "username", #journal/username
+                $row->{redirect}->{
+                    {
+                        J => "username",    #journal/username
                         E => "email",
-                }->{$_} } = 1;
+                    }->{$_}
+                } = 1;
             }
 
             foreach ( split( ":", $extra->{del} ) ) {
-                $row->{del}->{ {
+                $row->{del}->{
+                    {
                         TB => "trusted_by",
                         WB => "watched_by",
                         T  => "trusted",
                         W  => "watched",
                         C  => "communities",
-                }->{$_} } = 1;
+                    }->{$_}
+                } = 1;
             }
 
             return $row;
@@ -366,6 +395,7 @@ sub details {
 }
 
 # accessors
+
 =head2 C<< $self->token >>
 
 The string representation of the token (formed by a combination of the auth code and the id)
@@ -373,6 +403,10 @@ The string representation of the token (formed by a combination of the auth code
 =head2 C<< $self->applied >>
 
 Whether this token has been used.
+
+=head2 C<< $self->revoked >>
+
+Whether this token has been revoked.
 
 =head2 C<< $self->auth >>
 
@@ -412,12 +446,17 @@ sub token {
     my $self = $_[0];
 
     # _encode is a class method
-    return (ref $self)->_encode( $self->{renid}, $self->{auth} );
+    return ( ref $self )->_encode( $self->{renid}, $self->{auth} );
 }
 
 sub applied {
     my $self = $_[0];
-    return $self->{renuserid} ? 1 : 0;
+    return ( $self->{status} eq 'A' ) ? 1 : 0;
+}
+
+sub revoked {
+    my $self = $_[0];
+    return ( $self->{status} eq 'R' ) ? 1 : 0;
 }
 
 sub cartid {
@@ -425,13 +464,13 @@ sub cartid {
     return $_[0]->{cartid} = $_[1];
 }
 
-sub auth { return $_[0]->{auth} }
-sub id { return $_[0]->{renid} }
-sub ownerid { return $_[0]->{ownerid} }
+sub auth      { return $_[0]->{auth} }
+sub id        { return $_[0]->{renid} }
+sub ownerid   { return $_[0]->{ownerid} }
 sub renuserid { return $_[0]->{renuserid} }
-sub fromuser { return $_[0]->{fromuser} }
-sub touser { return $_[0]->{touser} }
-sub rendate { return $_[0]->{rendate} }
+sub fromuser  { return $_[0]->{fromuser} }
+sub touser    { return $_[0]->{touser} }
+sub rendate   { return $_[0]->{rendate} }
 
 =head1 BUGS
 
@@ -441,7 +480,7 @@ Afuna <coder.dw@afunamatata.com>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (c) 2010 by Dreamwidth Studios, LLC.
+Copyright (c) 2010-2014 by Dreamwidth Studios, LLC.
 
 This program is free software; you may redistribute it and/or modify it under
 the same terms as Perl itself. For a copy of the license, please reference

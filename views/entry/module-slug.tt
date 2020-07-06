@@ -1,0 +1,42 @@
+[%# views/entry/module-slug.tt
+
+Module for setting and previewing the entry slug.
+
+Authors:
+    Mark Smith <mark@dreamwidth.org>
+
+Copyright (c) 2013 by Dreamwidth Studios, LLC.
+
+This program is free software; you may redistribute it and/or modify it under
+the same terms as Perl itself.  For a copy of the license, please reference
+'perldoc perlartistic' or 'perldoc perlgpl'.
+%]
+
+<fieldset>
+<h3>[% ".header" | ml %]</h3>
+<div class='inner'>
+
+    <div class="row">
+        <div class="columns">
+            <div id="js-slug-base" class="slug-base"></div>
+        </div>
+    </div>
+
+    <div class="row collapse">
+        <div class="columns small-9">
+            [%- form.textbox( label = dw.ml( ".label.post_slug" )
+                    name = "entry_slug"
+                    id = "js-entry-slug"
+                    labelclass="hidden"
+
+                    maxlength = "80"
+            ) -%]
+        </div>
+
+        <div class="columns small-3">
+            <span class="postfix">.html</span>
+        </div>
+    </div>
+
+</div>
+</fieldset>

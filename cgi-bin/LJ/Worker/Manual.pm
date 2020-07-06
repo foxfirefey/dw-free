@@ -13,16 +13,17 @@
 
 package LJ::Worker::Manual;
 use strict;
-use lib "$LJ::HOME/cgi-bin";
 use base 'LJ::Worker';
-require "ljlib.pl";
+require "$ENV{LJHOME}/cgi-bin/ljlib.pl";
 use Getopt::Long;
 
 my $interval = 5;
 my $verbose  = 0;
-die "Unknown options" unless
-    GetOptions('interval|n=i' => \$interval,
-               'verbose|v'    => \$verbose);
+die "Unknown options"
+    unless GetOptions(
+    'interval|n=i' => \$interval,
+    'verbose|v'    => \$verbose
+    );
 
 my $quit_flag = 0;
 $SIG{TERM} = sub {
@@ -69,17 +70,19 @@ sub work {
 }
 
 sub on_afterwork { }
-sub on_idle { }
+sub on_idle      { }
+
 sub error {
-    my ($class, $msg) = @_;
+    my ( $class, $msg ) = @_;
     $class->debug($msg);
 }
 
 sub debug {
-    my ($class, $msg) = @_;
+    my ( $class, $msg ) = @_;
     $msg =~ s/\s+$//;
     print STDERR "$msg\n";
 }
+
 sub cond_debug {
     my $class = shift;
     return unless $verbose;

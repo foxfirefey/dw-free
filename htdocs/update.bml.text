@@ -45,6 +45,10 @@
 
 .event=Event:
 
+.extradata.subj=The entry was posted with the following subject:
+
+.extradata.subject.no_subject=(no subject)
+
 .full=Full Update Page
 
 .htmlokay.norich=(HTML okay; by default, newlines will be auto-formatted to <tt>&lt;br&gt;</tt>)
@@ -115,6 +119,8 @@
 
 .success.links.memories=Add the entry to your memories
 
+.success.links.myentries=View all my entries in this community
+
 .success.links.tags=Edit this entry's tags
 
 .success.links.view=View the entry
@@ -136,4 +142,3 @@
 .update.success2.community=Your update was successful. <a [[aopts]]>View your updated community</a>.
 
 .username=Account name:
-

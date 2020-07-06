@@ -16,17 +16,16 @@
 #
 
 use strict;
-use lib "$ENV{LJHOME}/cgi-bin";
+BEGIN {
+    require "$ENV{LJHOME}/cgi-bin/ljlib.pl";
+}
 
 use Time::HiRes qw/ gettimeofday tv_interval /;
-
-BEGIN {
-    require 'ljlib.pl';
-}
 use LJ::Sendmail;
 use LJ::Lang;
 use DW::Shop;
 use DW::Shop::Cart;
+use DW::Pay;
 
 
 ################################################################################
@@ -111,6 +110,7 @@ sub main_loop {
     return $log->( 'Database error cleaning carts: %s', $dbh->errstr )
         if $dbh->err;
     $log->( 'Cleaned %d carts that were unused for more than 30 days.', $ct+0 );
+    DW::Stats::increment( 'dw.shop.cart.expired', $ct );
 
 ## PHASE 1) PROCESS PAYMENTS
 
@@ -217,6 +217,7 @@ sub warn_user {
 
     my $u = LJ::load_userid( $uid )
         or return 0;
+    return 0 unless $u->is_visible;
 
     my $mail;
     if ( $timeleft < 86400*3 && ( ! defined $lastmail || $lastmail == 14 ) ) {
@@ -230,6 +231,13 @@ sub warn_user {
 
     return 1 unless defined $mail;
 
+    DW::Stats::increment( 'dw.shop.paid_account.warn_' . $mail, 1 );
+
+    # alter warning message body for premium paid accounts
+    my $bodytype = $mail;
+    my $status = DW::Pay::get_account_type( $u );
+    $bodytype = "$status.$mail" if $status eq "premium";
+
     if ( $u->is_community ) {
         # send an email to every maintainer
         my $maintus = LJ::load_userids( $u->maintainer_userids );
@@ -239,7 +247,7 @@ sub warn_user {
                 fromname => $LJ::SITENAME,
                 from => $LJ::ACCOUNTS_EMAIL,
                 subject => LJ::Lang::ml( "shop.expiration.comm.$mail.subject", { sitename => $LJ::SITENAME } ),
-                body => LJ::Lang::ml( "shop.expiration.comm.$mail.body", {
+                body => LJ::Lang::ml( "shop.expiration.comm.$bodytype.body", {
                     touser   => $maintu->display_name,
                     commname => $u->display_name,
                     shopurl  => "$LJ::SITEROOT/shop/account?for=gift&user=" . $u->user,
@@ -253,7 +261,7 @@ sub warn_user {
             fromname => $LJ::SITENAME,
             from => $LJ::ACCOUNTS_EMAIL,
             subject => LJ::Lang::ml( "shop.expiration.user.$mail.subject", { sitename => $LJ::SITENAME } ),
-            body => LJ::Lang::ml( "shop.expiration.user.$mail.body", {
+            body => LJ::Lang::ml( "shop.expiration.user.$bodytype.body", {
                 touser => $u->display_name,
                 shopurl => "$LJ::SITEROOT/shop/account?for=self",
                 sitename => $LJ::SITENAME,

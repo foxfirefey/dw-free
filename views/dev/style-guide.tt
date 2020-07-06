@@ -1,0 +1,623 @@
+[%# Style guide for the site. Shows CSS classes and code examples for designers/developers to use
+
+Authors:
+    Afuna <coder.dw@afunamatata.com>
+
+Copyright (c) 2015 by Dreamwidth Studios, LLC.
+
+This program is free software; you may redistribute it and/or modify it under
+the same terms as Perl itself.  For a copy of the license, please reference
+'perldoc perlartistic' or 'perldoc perlgpl'.
+%]
+[%- sections.title = '.title' | ml -%]
+
+[%#- save the scripts in a variable to be printed out all together in a window.onload -%]
+[%- SET global.scripts = "" -%]
+
+[%- BLOCK onload -%]&lt;script&gt;jQuery(document).ready(function($) {
+    [% content %]
+  });&lt;/script&gt;
+
+  [%- global.scripts = global.scripts _ content -%]
+[%- END -%]
+
+[% CALL dw.active_resource_group( "foundation" ) %]
+
+<p>Here are the various elements that we use on our pages. This is meant to be the place where all the components we use are documented: their appearance, their HTML structure, how to use them. Individual pages should have very little page-specific styling. For consistency, use these first, and think carefully before trying to do something that only one page will use.</p>
+
+<!-- only shrunk so that we have more lines between headers -->
+<h2>Headers / Panels</h2>
+<div class="row">
+  <div class="large-8 columns">
+<h3>h3. We welcome you</h3>
+<p class="lead">Platitudes are cheap. We've all heard services say they're committed to "diversity" and "tolerance" without ever getting specific, so here's our stance on it:</p>
+
+<blockquote>
+<p>We welcome people of any gender identity or expression, race, ethnicity, size, nationality, sexual orientation, ability level, neurotype, religion, elder status, family structure, culture, subculture, political opinion, identity, and self-identification. We welcome activists, artists, bloggers, crafters, dilettantes, musicians, photographers, readers, writers, ordinary people, extraordinary people, and everyone in between. <a href="">We welcome people who want to change the world</a>, <a href="?asdfhf#dont-click-on-this-unvisited-link">people who want to keep in touch with friends</a>, people who want to make great art, and people who just need a break after work. We welcome fans, geeks, nerds, and pixel-stained technopeasant wretches. We welcome you no matter if the Internet was a household word by the time you started secondary school or whether you were already retired by the time the World Wide Web was invented.</p>
+</blockquote>
+
+<h4>h4. We get excited about creativity</h4>
+<p>— from pro to amateur, from novels to haiku, from the photographer who's been doing this for decades to the person who just picked up a sketchbook last week.</p>
+
+<h5>h5. We support maximum freedom of creative expression</h5>
+<p>We support maximum freedom of creative expression within the few restrictions we need to keep the service viable for other users.</p>
+
+<h6>h6. We're serious about knowing and protecting your rights</h6>
+<p>With servers in the US we're obliged to follow US laws, but we're serious about knowing and protecting your rights when it comes to free expression and privacy.</p>
+
+<h5>h5. We will never put a limit on your creativity</h5>
+<p>We will never put a limit on your creativity just because it makes someone uncomfortable — even if that someone is us.</p>
+
+<h4>h4. We think accessibility for people with disabilities is a priority</h4>
+<p>We think accessibility for people with disabilities is a priority, not an afterthought. We think neurodiversity is a feature, not a bug. We believe in being inclusive, welcoming, and supportive of anyone who comes to us with good faith and the desire to build a community.</p>
+
+<h4>h4. We think our community is important</h4>
+<p>We think our technical and business experience is important, but we think our community experience is more important. We know what goes wrong when companies say one thing and do another, or when they refuse to say anything at all. We believe that keeping our operations transparent is just as important as keeping our servers stable.</p>
+
+  </div>
+  <div class="columns large-4">
+    <div class="row">
+      <div class="large-12 columns">
+        <div class="panel">
+          <h5>This is a regular panel.</h5>
+          <p>It has an easy to override visual style, and is appropriately subdued.</p>
+        </div>
+
+        <div class="panel callout radius">
+          <h5>This is a callout panel.</h5>
+          <p>It's a little ostentatious, but useful for important content.</p>
+        </div>
+
+      <div class="panel">
+        <h5>Just another panel.</h5>
+        <p>Etc etc etc.</p>
+      </div>
+    </div>
+
+    </div>
+  </div>
+</div>
+
+<h2>Forms</h2>
+<form>
+  <fieldset>
+    <legend>Fieldset</legend>
+
+    <div class="row">
+      <div class="large-12 columns">
+        [%- form.textbox( label = "Input Label"
+              placeholder = "large-12.columns"
+         ) -%]
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="large-4 columns error">
+        [%- form.textbox( label = "Input Label"
+              placeholder = "large-4.columns"
+              name = "has_error"
+         ) -%]
+      </div>
+      <div class="large-4 columns">
+        [%- form.textbox( label = "Input Label"
+              placeholder = "large-4.columns"
+         ) -%]
+      </div>
+      <div class="large-4 columns">
+        <div class="row collapse">
+          <label>Input Label</label>
+          <div class="small-9 columns">
+            <input type="text" placeholder="small-9.columns">
+          </div>
+          <div class="small-3 columns">
+            <span class="postfix">.com</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+   <div class="row">
+     <div class="large-12 columns">
+        [%- form.select( label = "Select Dropdown"
+              placeholder = "large-12.columns"
+              items = [ {
+                optgroup = "foo bar baz"
+                items = [ { text = "foo", value = "" }, { text = "bar", value = "" }, { text = "baz", value = "" }, ]
+            } ]
+        ) -%]
+     </div>
+   </div>
+
+    <div class="row">
+      <div class="large-12 columns">
+        [%- form.textarea( label = "Textarea Label"
+              placeholder = "small-12.columns"
+        ) -%]
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="large-12 columns">
+        <input type="submit" class="button" value=".button" />
+        <input type="submit" class="button secondary" value=".button.secondary">
+      </div>
+    </div>
+  </fieldset>
+
+  [%- WRAPPER code -%]
+  form.textbox( label = "Input Label"
+    placeholder = "large-12.columns"
+  )
+  form.select( label = "Select Dropdown"
+    placeholder = "large-12.columns"
+    items = [ {
+        optgroup = "foo bar baz"
+        items = [ { text = "foo", value = "" }, { text = "bar", value = "" }, { text = "baz", value = "" }, ]
+    } ]
+  )
+  form.textarea( label = "Textarea Label"
+    placeholder = "small-12.columns"
+  )
+  # see DW::Template::Plugin::FormHTML for more
+  [%- END -%]
+
+
+  <fieldset><legend>Buttons</legend>
+      <input type="button" class="small button" value=".small.button" /><br>
+      <input type="button" class="button" value="(default) .button" /><br>
+      <input type="button" class="large button" value=".large.button" /><br>
+  </fieldset>
+
+  <fieldset>
+    <legend>Icon-only Buttons</legend>
+    <div class="row">
+      <div class="columns large-6">
+        [%- INCLUDE "components/icon-button.tt"
+              button = {
+                class = ""
+                id = ""
+              }
+              icon = "x"
+              text = "Close"
+        -%]
+        [%- INCLUDE "components/icon-button.tt"
+              button = {
+                class = "secondary"
+                id = ""
+              }
+              icon = "arrow-left"
+              text = "Previous"
+        -%]
+        [%- INCLUDE "components/icon-button.tt"
+              button = {
+                class = "secondary"
+                id = ""
+              }
+              icon = "arrow-right"
+              text = "Next"
+        -%]
+      </div>
+      <div class="columns large-6">
+[%- WRAPPER code -%]
+INCLUDE "components/icon-button.tt"
+  button = {
+    class = "[secondary][etc-button-class]"
+    id = ""
+  }
+  icon = "arrow-right"
+  text = "Next"
+[%- END -%]
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Buttons with Decorative Icons</legend>
+      <div class="row">
+        <div class="columns large-6">
+          [%- INCLUDE "components/icon-button-decorative.tt"
+                button = {
+                  class = ""
+                  id = ""
+                }
+                icon = "x"
+                text = "Close"
+          -%]
+          [%- INCLUDE "components/icon-button-decorative.tt"
+                button = {
+                  class = "secondary"
+                  id = ""
+                }
+                icon = "arrow-left"
+                text = "Previous"
+          -%]
+          [%- INCLUDE "components/icon-button-decorative.tt"
+                button = {
+                  class = "secondary"
+                  id = ""
+                }
+                icon = "arrow-right"
+                text = "Next"
+          -%]
+        </div>
+        <div class="columns large-6">
+  [%- WRAPPER code -%]
+  INCLUDE "components/icon-button-decorative.tt"
+    button = {
+      class = "[secondary][etc-button-class]"
+      id = ""
+    }
+    icon = "arrow-right"
+    text = "Next"
+  [%- END -%]
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Links with Decorative Icons</legend>
+        <div class="row">
+          <div class="columns large-6">
+            [%- INCLUDE "components/icon-link-decorative.tt"
+                  link = {
+                    url = "$site.root/etc"
+                    newwindow = 1
+                  }
+                  icon = "x"
+                  text = "Close"
+            %] |
+            [%- INCLUDE "components/icon-link-decorative.tt"
+                  link = {
+                    url = "$site.root/etc"
+                    newwindow = 1
+                  }
+                  icon = "arrow-left"
+                  text = "Previous"
+            %] |
+            [%- INCLUDE "components/icon-link-decorative.tt"
+                  link = {
+                    url = "$site.root/etc"
+                    newwindow = 1
+                  }
+                  icon = "arrow-right"
+                  text = "Next"
+            -%]
+          </div>
+          <div class="columns large-6">
+    [%- WRAPPER code -%]
+    INCLUDE "components/icon-link-decorative.tt"
+      link = {
+        url = "$site.root/etc"
+        newwindow = 1
+      }
+      icon = "arrow-right"
+      text = "Next"
+    [%- END -%]
+          </div>
+        </div>
+      </fieldset>
+</form>
+
+
+<h2>Select All Tables</h2>
+<div class="row"><div class="large-6 columns">
+<table class="select-all">
+<thead>
+  <tr class="select-all-header">
+    <th scope="row"><span class="select-all-label" id="select-all">Select All</span></th>
+    <th><label><input type="checkbox" data-select-all="foo" aria-labelledby="select-all"> foo</label></th>
+    <th><label><input type="checkbox" data-select-all="bar" aria-labelledby="select-all"> bar</label></th>
+    <th><label><input type="checkbox" data-select-all="baz" aria-labelledby="select-all"> baz</label></th>
+  </tr>
+</thead>
+<tbody>
+<tr>
+  <th scope="row">apples</th>
+  <td><label><input type="checkbox" name="foo"> foo</label></td>
+  <td><label><input type="checkbox" name="bar"> bar</label></td>
+  <td><label><input type="checkbox" name="baz"> baz</label></td>
+</tr>
+<tr>
+  <th scope="row">bananas</td>
+  <td><label><input type="checkbox" name="foo"> foo</label></td>
+  <td><label><input type="checkbox" name="bar"> bar</label></td>
+  <td><label><input type="checkbox" name="baz"> baz</label></td>
+</tr>
+<tr>
+  <th scope="row">cheese and eggs and ham</td>
+  <td><label><input type="checkbox" name="foo"> foo</label></td>
+  <td><label><input type="checkbox" name="bar"> bar</label></td>
+  <td><label><input type="checkbox" name="baz"> baz</label></td>
+</tr>
+<tr>
+  <th scope="row">breakfast</th>
+  <td><label><input type="checkbox" name="foo"> foo</label></td>
+  <td><label><input type="checkbox" name="bar"> bar</label></td>
+  <td><label><input type="checkbox" name="baz"> baz</label></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<div class="large-6 columns">
+[%-
+  dw.need_res( { group => "foundation" },
+      "js/components/jquery.select-all.js"
+      "stc/css/components/select-all.css"
+  );
+-%]
+[%- WRAPPER code -%]
+dw.need_res( { group => "foundation" },
+      "js/components/jquery.select-all.js"
+      "stc/css/components/select-all.css"
+);
+[%- END -%]
+
+</div>
+</div>
+
+<h2>Pagination</h2>
+<div class="row">
+  <div class="large-6 columns">
+  [% INCLUDE components/pagination.tt
+    current => 2,
+    total_pages => 12,
+  %]
+  </div>
+  <div class="large-6 columns">
+  [%- WRAPPER code -%]
+  INCLUDE components/pagination.tt
+    current => 2,
+    total_pages => 12,
+  [%- END -%]
+  </div>
+</div>
+
+<h2>Queue</h2>
+[%- dw.need_res( { group => "foundation" },
+      "stc/css/components/queues.css"
+  ) -%]
+<p>A list of items for someone to take action on.</p>
+<div class="row">
+  <div class="large-6 columns">
+
+  <ul class="queue">
+    <li class="queue-item">
+    <div class="row">
+      <div class="columns large-3">[%- INCLUDE ljuser user="user" -%]</div>
+      <div class="columns large-7"><a href="">entry subject</a></div>
+      <div class="columns large-2 timestamp">timestamp</div>
+    </div>
+    </li>
+    <li class="queue-item"><div class="row">
+        <div class="columns large-3">[%- INCLUDE ljuser user="user" -%]</div>
+        <div class="columns large-7"><a href="">entry subject</a></div>
+        <div class="columns large-2 timestamp">timestamp</div>
+    </div></li>
+  </ul>
+
+  </div>
+  <div class="large-6 columns">
+  [%- WRAPPER code -%]
+  dw.need_res( { group => "foundation" },
+      "stc/css/components/queues.css"
+  );
+  [%- END -%]
+</div>
+</div>
+
+
+<h2>Sub Nav</h2>
+<div class="row">
+  <div class="large-6 columns">
+  [%- INCLUDE components/filter.tt
+    links => [
+              { "text" => ".filter.all", "url" => "#", "active" => 1 },
+              { "text" => ".filter.active", "url" => "#" },
+              { "text" => ".filter.pending", "url" => "#" },
+              { "text" => ".filter.suspended", "url" => "#" },
+            ]
+   -%]</div>
+  <div class="large-6 columns">
+  [%- WRAPPER code -%]
+  INCLUDE components/filter.tt
+    links => [
+      { "text" => ".filter.all", "url" => "#", "active" => 1 },
+      { "text" => ".filter.active", "url" => "#" },
+      { "text" => ".filter.pending", "url" => "#" },
+      { "text" => ".filter.suspended", "url" => "#" },
+    ]
+  [%- END -%]
+  </div>
+</div>
+
+<h2>Collapsible Sections</h2>
+<div class="row">
+
+<div class="large-6 columns">
+  <div data-collapse="foo">
+    <h4>Foo</h4>
+    <div class="inner">foo foo foo fooooo</div>
+  </div>
+  <div data-collapse="bar" data-collapse-state="collapsed">
+    <h4>Bar</h4>
+    <div class="inner">bar bar barrrr</div>
+  </div>
+  <div data-collapse="baz" data-collapse-state="expanded">
+    <h4>Baz</h4>
+    <div class="inner">baz baz bzzt</div>
+  </div>
+</div>
+
+<div class="large-6 columns">
+  [%- dw.need_res( { group => "foundation" },
+        "js/components/jquery.collapse.js"
+        "stc/css/components/collapse.css"
+        "stc/css/components/foundation-icons.css"
+  ) -%]
+  [%- WRAPPER code -%]
+  dw.need_res( { group => "foundation" },
+        "js/components/jquery.collapse.js"
+        "stc/css/components/collapse.css"
+        "stc/css/components/foundation-icons.css"
+  )
+  [%- END -%]
+
+  [% WRAPPER code+onload -%]
+    $("body").collapse();
+  [%- END -%]
+  </code></pre>
+</div>
+</div>
+
+<h2>Fancy Select</h2>
+<div class="row">
+  <div class="large-6 columns">
+  [%- INCLUDE components/fancyselect.tt
+        name = "foo"
+        label = "Foo:"
+
+        items = [
+          { label = "plain"
+            value = "plain"
+            format = "a plain option"
+          }
+          { label = "image"
+            value = "image"
+            format = "with image prefix"
+            image = {
+              src = "/silk/site/tick.png"
+              width = 16
+              height = 16
+            }
+          }
+          { label = "user"
+            value = "user"
+            format = "contains a @user"
+          }
+          {
+            label = "comm"
+            value = "comm"
+            format = "contains a @c:comm"
+          }
+        ]
+  -%]
+  </div>
+
+  <div class="large-6 columns">
+  [%- WRAPPER code -%]
+    name = "foo"
+    label = "Foo:"
+
+    items = [
+      { label = "plain"
+        value = "plain"
+        format = "a plain option"
+      }
+      { label = "image"
+        value = "image"
+        format = "with image prefix"
+        image = {
+          src = "/silk/site/tick.png"
+          width = 16
+          height = 16
+        }
+      }
+      { label = "user"
+        value = "user"
+        format = "contains a @user"
+      }
+      {
+        label = "comm"
+        value = "comm"
+        format = "contains a @c:comm"
+      }
+    ]
+  -%]
+  [%- END -%]
+  [% WRAPPER code+onload -%]
+    $("body").fancySelect();
+  [%- END -%]
+  </div>
+</div>
+
+<h2>Authas</h2>
+<div class="row">
+  <div class="columns">
+    [%- authas_form -%]
+  </div>
+</div>
+<div class="row"><div class="columns">
+  [%- WRAPPER code -%]
+    # variable from controller()
+    authas_form
+  [%- END -%]
+</div></div>
+<h2>Alert Boxes</h2>
+<div data-alert class="alert-box radius">
+  This is a standard alert (div.alert-box).
+  <a href="" class="close">&times;</a>
+</div>
+
+<div data-alert class="alert-box radius success">
+  This is a success alert (div.alert-box.success).
+  <a href="" class="close">&times;</a>
+</div>
+
+<div data-alert class="alert-box alert">
+  This is an alert (div.alert-box.alert).
+  <a href="" class="close">&times;</a>
+</div>
+
+<div data-alert class="alert-box secondary">
+  This is a secondary alert (div.alert-box.secondary).
+  <a href="" class="close">&times;</a>
+</div>
+
+<h2>Top Bar</h2>
+<nav class="top-bar" data-topbar>
+  <ul class="title-area">
+    <li class="name">
+      <h1><a href="#">My Site</a></h1>
+    </li>
+  </ul>
+
+  <section class="top-bar-section">
+    <!-- Right Nav Section -->
+    <ul class="right">
+      <li class="active"><a href="#">Right Nav Button Active</a></li>
+      <li class="has-dropdown">
+        <a href="#">Right Button with Dropdown</a>
+        <ul class="dropdown">
+          <li><a href="#">First link in dropdown</a></li>
+        </ul>
+      </li>
+    </ul>
+
+    <!-- Left Nav Section -->
+    <ul class="left">
+      <li><a href="#">Left Nav Button</a></li>
+    </ul>
+  </section>
+</nav>
+
+
+[%# Helper blocks for formatting examples above %]
+[%- BLOCK ljuser -%]
+<span lj:user='[% user %]' style='white-space: nowrap;' class='ljuser'><a href='//[% user %].dreamwidth.org/profile'><img src='//www.dreamwidth.org/img/silk/identity/user.png' alt='[personal profile] ' width='17' height='17' style='vertical-align: text-bottom; border: 0; padding-right: 1px;' /></a><a href='//[% user %].dreamwidth.org/'><b>[% user %]</b></a></span>
+[%- END -%]
+
+[%- BLOCK code -%]
+<h3>code</h3>
+<code class="code-example"><pre>[&#37;- [%- content | trim -%] -&#37;]</pre></code>
+[%- END -%]
+
+[%- sections.head = BLOCK -%]
+<script>
+  window.onload=function() {
+    [%- global.scripts -%]
+  }
+  </script>
+
+  <style>.code-example { display: block; }</style>
+[%- END -%]

@@ -22,15 +22,14 @@ use Carp qw/ croak confess /;
 
 use DW::Shop::Cart;
 use DW::Shop::Engine;
-use DW::Shop::Item::Account;
-use DW::Shop::Item::Points;
-use DW::Shop::Item::Rename;
-use DW::Shop::Item::Icons;
+
+use LJ::ModuleLoader;
+LJ::ModuleLoader->require_subclasses("DW::Shop::Item");
 
 # constants across the site
-our $MIN_ORDER_COST = 3.00; # cost in USD minimum.  this only comes into affect if
-                            # a user is trying to check out an order that costs
-                            # less than this.
+our $MIN_ORDER_COST = 3.00;    # cost in USD minimum.  this only comes into affect if
+                               # a user is trying to check out an order that costs
+                               # less than this.
 
 # variables we maintain
 our $STATE_OPEN        = 1;    # open carts - user can still modify
@@ -42,6 +41,19 @@ our $STATE_PEND_REFUND = 6;    # refund is approved but unissued
 our $STATE_REFUNDED    = 7;    # we have refunded this cart and reversed it
 our $STATE_CLOSED      = 8;    # carts can go from OPEN -> CLOSED
 our $STATE_DECLINED    = 9;    # payment entity declined the fundage
+
+# state names, just for helping
+our %STATE_NAMES = (
+    1 => 'open',
+    2 => 'checkout',
+    3 => 'pend_paid',
+    4 => 'paid',
+    5 => 'processed',
+    6 => 'pend_refund',
+    7 => 'refunded',
+    8 => 'closed',
+    9 => 'declined'
+);
 
 # documentation of valid state transitions...
 #
@@ -76,38 +88,36 @@ our $STATE_DECLINED    = 9;    # payment entity declined the fundage
 #
 # any other state transition is hereby considered null and void.
 
-
 # keys are the names of the various payment methods as passed by the cart widget drop-down
 # values are hashrefs with id (the integer value that is stored in the 'paymentmethod'
 # field in the db) and class (the name of the DW::Shop::Engine class)
 our %PAYMENTMETHODS = (
     paypal => {
-        id => 1,
+        id    => 1,
         class => 'PayPal',
     },
     checkmoneyorder => {
-        id => 2,
+        id    => 2,
         class => 'CheckMoneyOrder',
     },
     creditcardpp => {
-        id => 3,
+        id    => 3,
         class => 'CreditCardPP',
     },
     gco => {
-        id => 4,
+        id    => 4,
         class => 'GoogleCheckout',
     },
     creditcard => {
-        id => 5,
+        id    => 5,
         class => 'CreditCard',
     },
 );
 
-
 # called to return an instance of the shop; auto-determines if we have a
 # remote user and uses that, else, just returns an anonymous shop
 sub get {
-    my ( $class ) = @_;
+    my ($class) = @_;
 
     # easy mode: if we have a remote then we can just toss this into the
     # bucket and have it be used; this trick works because get_remote and
@@ -120,38 +130,33 @@ sub get {
     return bless { anon => 1 }, $class;
 }
 
-
 # returns an active cart, if the user has one
 sub cart {
-    my ( $self ) = @_;
+    my ($self) = @_;
 
-    return DW::Shop::Cart->get( $self );
+    return DW::Shop::Cart->get($self);
 }
-
 
 # builds a new cart for the user (throws away existing active)
 sub new_cart {
-    my ( $self ) = @_;
+    my ($self) = @_;
 
-    return DW::Shop::Cart->new_cart( $self );
+    return DW::Shop::Cart->new_cart($self);
 }
-
 
 # gets a link to the active user; this is done this way with a load_userid call
 # to prevent circular references.  (we could just make it a weak reference...?)
 # FIXME: explore if LJ uses weak references anywhere and if so we can use them
 # to store a weakened-$u in $self in initialize()
 sub u {
-    return undef if $_[0]->{anon} || ! $_[0]->{userid};
+    return undef if $_[0]->{anon} || !$_[0]->{userid};
     return LJ::load_userid( $_[0]->{userid} );
 }
-
 
 # true if this is an anonymous shopping session
 sub anonymous {
     return $_[0]->{anon} ? 1 : 0;
 }
-
 
 # returns a text error string if the remote is not allowed to use the
 # shop/payment system, undef means they're allowed
@@ -159,18 +164,19 @@ sub remote_sysban_check {
 
     # do sysban checks:
     if ( LJ::sysban_check( 'pay_uniq', LJ::UniqCookie->current_uniq ) ) {
-        return BML::ml( 'error.blocked', { blocktype => "computer", email => $LJ::ACCOUNTS_EMAIL } );
-    } elsif ( my $remote = LJ::get_remote() ) {
+        return BML::ml( 'error.blocked',
+            { blocktype => "computer", email => $LJ::ACCOUNTS_EMAIL } );
+    }
+    elsif ( my $remote = LJ::get_remote() ) {
         if ( LJ::sysban_check( 'pay_user', $remote->user ) ) {
-            return BML::ml( 'error.blocked', { blocktype => "account", email => $LJ::ACCOUNTS_EMAIL } );
-        } elsif ( LJ::sysban_check( 'pay_email', $remote->email_raw ) ) {
-            return BML::ml( 'error.blocked', { blocktype => "email address", email => $LJ::ACCOUNTS_EMAIL } );
+            return BML::ml( 'error.blocked',
+                { blocktype => "account", email => $LJ::ACCOUNTS_EMAIL } );
+        }
+        elsif ( LJ::sysban_check( 'pay_email', $remote->email_raw ) ) {
+            return BML::ml( 'error.blocked',
+                { blocktype => "email address", email => $LJ::ACCOUNTS_EMAIL } );
         }
     }
-
-    # now do a tor check
-    return BML::ml( 'error.blocked', { blocktype => "Tor proxy", email => $LJ::ACCOUNTS_EMAIL } )
-        if LJ::Sysban::tor_check( 'shop' );
 
     # looks good
     return undef;
@@ -186,8 +192,9 @@ use Carp qw/ confess /;
 
 # returns the shop on a user
 sub shop {
-    return $_[0]->{_shop}
+    my $shop = $_[0]->{_shop}
         or confess 'tried to get shop without calling DW::Shop->initialize()';
+    return $shop;
 }
 
 1;

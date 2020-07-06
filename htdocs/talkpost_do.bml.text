@@ -7,6 +7,10 @@
 
 .error.banned.comm=You are not allowed to post in this community.
 
+.error.banned.reply=You have been banned from replying to this user's comments.
+
+.error.banned.entryowner=You have been banned from commenting on entries by this user.
+
 .error.blankmessage=Your message is blank.  Please enter something in the message field.
 
 .error.confused_identity=You entered an account name but selected "post anonymously" or as the currently logged in account.  Please clear the textbox or select the correct posting mode and try again.
@@ -38,6 +42,8 @@
 .error.nocomments=Comments are disabled on this entry.
 
 .error.noopenid=OpenID users aren't authorized to reply to this entry.
+
+.error.noopenidpost=You must <a [[aopts1]]>set</a> and <a [[aopts2]]>confirm</a> your email address before you can comment.
 
 .error.noparent=Cannot reply to a non-existent comment.
 
@@ -77,9 +83,12 @@
 
 .preview.entry.journal=[[user]] posting in [[journal]]
 
+.preview.poster=<strong>Posted by: </strong>
+.preview.anonymous=Anonymous
+.preview.unauthenticated_openid=[[openid]] (not yet authenticated)
 .preview.subject=<strong>Subject: </strong>
 
-.preview.submit=Submit
+.preview.postcomment=Post Comment
 
 .preview.title=Preview
 
@@ -87,17 +96,17 @@
 
 .success.message2=Your comment has been added. You can <a [[aopts]]>view it</a>.
 
-.success.screened.comm.anon2=Your anonymous comment has been added and marked as screened; it will be visible only to the community administrators until they choose to unscreen it. <a [[aopts]]>Go back to the comment thread</a>.
+.success.screened.comm.anon3=Your anonymous comment has been added and marked as screened; it will be visible only to any logged-in user to whom you may be replying and the community administrators until they choose to unscreen it. <a [[aopts]]>Go back to the comment thread</a>.
 
-.success.screened.comm.owncomm2=Your comment has been added. According to this community or entry's settings, it was marked as screened, and will be visible only to you and any other community admins until one of you chooses to unscreen it. You can view your comment <a [[aopts]]>here</a>.
+.success.screened.comm.owncomm4=Your comment has been added. According to this community or entry's settings, it was marked as screened, and will be visible only to you, any logged-in user to whom you may be replying, and any other community admins until one of you chooses to unscreen it. <a [[aopts]]>View your comment</a>.
 
-.success.screened.comm2=Your comment has been added and marked as screened; it will be visible only to you and the community administrators until they choose to unscreen it. <a [[aopts]]>View your comment</a>.
+.success.screened.comm3=Your comment has been added and marked as screened; it will be visible only to you, any logged-in user to whom you may be replying, and the community administrators until they choose to unscreen it. <a [[aopts]]>View your comment</a>.
 
-.success.screened.user.anon2=Your anonymous comment has been added. According to this account's settings, it was marked as screened and will be visible only to the account owner until the owner chooses to unscreen it. <a [[aopts]]>Go back to the comment thread</a>.
+.success.screened.user.anon3=Your anonymous comment has been added. According to this account's settings, it was marked as screened and will be visible only to any logged-in user to whom you may be replying and the account owner until the owner chooses to unscreen it. <a [[aopts]]>Go back to the comment thread</a>.
 
-.success.screened.user.ownjournal=Your comment has been added. According to this journal's settings, it was marked as screened, and will be visible only to you until you choose to unscreen it. You can view your comment <a [[aopts]]>here</a>.
+.success.screened.user.ownjournal3=Your comment has been added. According to this journal's settings, it was marked as screened, and will be visible only to you and any logged-in user to whom you may be replying until you choose to unscreen it. <a [[aopts]]>View your comment</a>.
 
-.success.screened.user2=Your comment has been added. According to this account's settings, it was marked as screened and will be visible only to you and the journal's owner until the owner chooses to unscreen it. <a [[aopts]]>View your comment</a>.
+.success.screened.user3=Your comment has been added. According to this account's settings, it was marked as screened and will be visible only to you, any logged-in user to whom you may be replying, and the journal's owner until the owner chooses to unscreen it. <a [[aopts]]>View your comment</a>.
 
 .success.title=Success
 

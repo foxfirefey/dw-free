@@ -34,15 +34,16 @@ Apply a ML string.
 =cut
 
 sub ml {
+
     # save the last argument as the hashref, hopefully
     my $args = $_[-1];
     $args = {} unless $args && ref $args eq 'HASH';
 
     # we have to return a sub here since we are a dynamic filter
     return sub {
-        my ( $code ) = @_;
+        my ($code) = @_;
 
-        $code = DW::Request->get->note( 'ml_scope' ) . $code
+        $code = DW::Request->get->note('ml_scope') . $code
             if rindex( $code, '.', 0 ) == 0;
 
         my $lang = decide_language();
@@ -56,6 +57,7 @@ sub ml {
 Escape any JS output
 
 =cut
+
 sub js {
     return sub {
         return LJ::ejs_string( $_[0] );
@@ -64,34 +66,22 @@ sub js {
 
 sub decide_language {
     my $r = DW::Request->get;
-    return $r->note( 'ml_lang' ) if $r->note( 'ml_lang' );
-    
+    return $r->note('ml_lang') if $r->note('ml_lang');
+
     my $lang = _decide_language();
-    
+
     $r->note( ml_lang => $lang );
     return $lang;
 }
 
 sub _decide_language {
-    my $r = DW::Request->get;
+    my $r    = DW::Request->get;
     my $args = $r->get_args;
 
     # GET param 'uselang' takes priority
     my $uselang = $args->{uselang} || "";
     return $uselang
-        if $uselang eq 'debug' || LJ::Lang::get_lang( $uselang );
-
-    # next is their cookie preference
-    #FIXME: COOKIE!
-    #if ( $r->cookie('langpref') =~ m!^(\w{2,10})/(\d+)$! ) {
-    #    if (exists $env->{"Langs-$1"}) {
-    #        # FIXME: Probably should actually do this!!!
-    #        # make sure the document says it was changed at least as new as when
-    #        # the user last set their current language, else their browser might
-    #        # show a cached (wrong language) version.
-    #        return $1;
-    #    }
-    #}
+        if $uselang eq 'debug' || LJ::Lang::get_lang($uselang);
 
     # FIXME: next is their browser's preference
 
@@ -100,6 +90,10 @@ sub _decide_language {
 
     # lastly, english.
     return 'en';
+}
+
+sub time_to_http {
+    return LJ::time_to_http( $_[0] );
 }
 
 1;

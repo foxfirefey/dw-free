@@ -6,11 +6,12 @@ body<=
 {
     use strict;
     
+    my $remote = LJ::get_remote();
+    return "<?needlogin?>" unless $remote;
+    
     my $dbr = LJ::get_db_reader();
     my $sth;
 
-    LJ::set_active_crumb('translate');
-    
     $sth = $dbr->prepare("SELECT lnid, lncode, lnname, lastupdate FROM ml_langs");
     $sth->execute;
     my %lang;

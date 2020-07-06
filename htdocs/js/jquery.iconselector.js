@@ -15,7 +15,7 @@
                 });
         }
 
-        return $(this).wrap("<span class='iconselect_trigger_wrapper'></span>");
+        return $(this);
     };
 
     // selected icon
@@ -142,6 +142,7 @@
     function _selectCurrent() {
         if ($.fn.iconselector.selectedKeyword) {
             $.fn.iconselector.owner.val($.fn.iconselector.selectedKeyword);
+            $.fn.iconselector.owner.trigger("change");
             opts.onSelect.apply($.fn.iconselector.owner[0]);
             $.fn.iconselector.instance.dialog("close");
         }
@@ -167,7 +168,7 @@
         params[option] = value;
 
         // this is a best effort thing, so be silent about success/error
-        $.post( $.endpoint( "iconbrowser_save" ) , params );
+        $.post( "/__rpc_iconbrowser_save", params );
     }
 
     function _open () {
@@ -263,7 +264,7 @@
                             });
                         }
 
-                        var $comment = ( icon.comment != "" ) ? $("<div class='comment'></div>").text( icon.comment ) : "";
+                        var $comment = ( icon.comment != "" ) ? $("<div class='icon-comment'></div>").text( icon.comment ) : "";
 
                         var $meta = $("<div class='meta_wrapper'></div>").append($keywords).append($comment);
                         var $item = $("<div class='iconselector_item'></div>").append($img).append($meta);
@@ -313,3 +314,14 @@
     };
 
 })(jQuery);
+
+jQuery(function($) {
+    var browseButton = $("#lj_userpicselect");
+    if (browseButton.length > 0) {
+        $("#prop_picture_keyword").iconselector({
+            selectorButtons: "#lj_userpicselect, .lj_userpicselect_extra",
+            metatext: browseButton.data("iconbrowserMetatext"),
+            smallicons: browseButton.data("iconbrowserSmallicons")
+        });
+    }
+});

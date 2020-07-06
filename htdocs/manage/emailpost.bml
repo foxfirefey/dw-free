@@ -43,8 +43,7 @@ body<=
 {
     use strict;
     use vars qw(%POST %GET);
-
-    LJ::set_active_crumb('mobilepost');
+    use DW::API::Key;
 
     return $ML{'.error.sitenotconfigured'} unless $LJ::EMAIL_POST_DOMAIN;
 
@@ -79,7 +78,6 @@ body<=
 
         my @address  = split(/\s*,\s*/, $u->{emailpost_allowfrom});
         my $addr     = $address[0] || $ML{'.help.allowedsenderemail'};
-        my $addr_pgp = $ML{'.help.pgpsenderemail'};
         $addr =~ s/\(\w\)$//;
         my $pin          = $u->{emailpost_pin} || $ML{'.help.pin'};
         my $to           = BML::ml('.help.to', {'email' => $user . '@' . $LJ::EMAIL_POST_DOMAIN}) . '<br />';
@@ -87,11 +85,9 @@ body<=
         my $to_pin_bold  = BML::ml('.help.to', {'email' => "$user<b>+$pin</b>" . '@' . $LJ::EMAIL_POST_DOMAIN}) . '<br />';
         my $to_community = BML::ml('.help.to', {'email' => "$user.<b>$community</b>+$pin" . '@' . $LJ::EMAIL_POST_DOMAIN}) . '<br />';
         my $to_hyphens   = BML::ml('.help.to', {'email' => "<b>$user_hyphen.$comm_hyphen</b>+$pin" . '@' . $LJ::EMAIL_POST_DOMAIN}) . '<br />';
-        my $to_pgp       = BML::ml('.help.to', {'email' => "$user<b>+PGP</b>" . '@' . $LJ::EMAIL_POST_DOMAIN}) . '<br />';
         my $subject      = BML::ml('.help.subject', {'pin' => ''}) . '<br /><br />';
         my $subject_pin  = BML::ml('.help.subject', {'pin' => "<b>+$pin</b>"}) . '<br /><br />';
         my $from         = BML::ml('.help.from', {'email' => $addr}) . '<br />';
-        my $from_pgp     = BML::ml('.help.from', {'email' => $addr_pgp}) . '<br />';
         my $body         = $ML{'.help.body'};
 
         if ($need_login) {
@@ -219,29 +215,7 @@ body<=
                     <?p } . BML::ml( '.help.headers.compat.text', { 'sitename' => $LJ::SITENAME } ) . qq{ p?>
                     </fieldset>
                 }
-            },
-
-            {
-                name  => 'advanced',
-                title => $ML{'.help.advanced.header'},
-                url   => '?mode=help&type=advanced',
-                text  => qq{
-                    <?h1 $ML{'.help.advanced.header'} h1?><br />
-
-                    <a name="pgp"></a>
-                    <fieldset><legend>$ML{'.help.advanced.pgp.header'} } .
-                    LJ::img( 'key', '', { alt => '' } ) . qq{ </legend>
-                    <?p } . BML::ml('.help.advanced.pgp.text1', {'pgp' => "<b>PGP</b>"}) . qq{ p?>
-                    <?p } . BML::ml('.help.advanced.pgp.text2', {'aopts' => "href='$LJ::SITEROOT/manage/pubkey'"}) . qq{ p?>
-                    <?emailex
-                    $to_pgp
-                    $from_pgp
-                    $subject
-                    $body
-                    <br />$ML{'.help.advanced.pgp.body'}
-                    emailex?></fieldset>
-                }
-            },
+            }
         );
 
         # index by name, record order
@@ -296,10 +270,11 @@ body<=
 #--------------------------------------------------------------------------
 
     # Update settings
-    if (LJ::did_post()) {
+    if (LJ::did_post() && $POST{"save"}) {	    
         my @errors;
 
-        push @errors, $ML{'error.invalidform'} unless LJ::check_form_auth();
+        return "<?h1 $ML{'Error'} h1?><?p $ML{'error.invalidform'} p?>"
+             unless LJ::check_form_auth();
 
         my $addresses = $POST{addresses};
         my $pin = $POST{pin};
@@ -356,20 +331,64 @@ body<=
             $ret .= "<?p FIXME: link to helpurl p?>";
         }
         return $ret;
-    }
+
+	}
 
 #--------------------------------------------------------------------------
 
+    my $ret;
+
+    # if we just reset the token, add a header but show the original page still
+    if ( LJ::did_post() && $POST{"action:token"}) {
+
+        return "<?h1 $ML{'Error'} h1?><?p $ML{'error.invalidform'} p?>"
+            unless LJ::check_form_auth();
+
+        $ret .= $u->generate_emailpost_auth
+                    ? "<div class='highlight-box'>$ML{'.reply.status.success'}</div>"
+                    : "<div class='error-box'>$ML{'.reply.status.error'}</div>";
+    }
+
+    if ( LJ::did_post() && $POST{"action:apikey"}) {
+        
+        return "<?h1 $ML{'Error'} h1?><?p $ML{'error.invalidform'} p?>"
+             unless LJ::check_form_auth();
+
+        $ret .= DW::API::Key->new_for_user($u)
+                    ? "<div class='highlight-box'>$ML{'.api.status.success'}</div>"
+                    : "<div class='error-box'>$ML{'.api.status.error'}</div>";
+    }
+
+    if ( LJ::did_post() && $POST{"action:delete"}) {
+        
+        return "<?h1 $ML{'Error'} h1?><?p $ML{'error.invalidform'} p?>"
+            unless LJ::check_form_auth();
+
+        my $deleted_keys .= $POST{"delete"};
+        foreach (split(/\0/, $deleted_keys)) {            
+            s/\s+//g;
+            next unless $_;
+            my $key = DW::API::Key->get_key($_);
+            
+            if (defined $key) {
+                $ret .= $key->delete($u) 
+                    ? "<div class='highlight-box'>" . BML::ml('.api.delete.success', {'key' => $key->{keyhash}}) . "</div>"
+                    : "<div class='highlight-box'>" . BML::ml('.api.delete.error', {'key' => $key->{keyhash}}) . "</div>";
+            }
+
+        }
+    }
+
     # Initial page
     my $addrlist = LJ::Emailpost::Web::get_allowed_senders( $u );
-    my (@address, $res, $ret);
+    my (@address, $res);
     push @address, $_ foreach sort keys %$addrlist;
 
     # get userpics and friendgroups
     $res = LJ::Protocol::do_request(
         "login",
         {
-            "ver" => ( $LJ::UNICODE ? "1" : "0" ),
+            "ver" => $LJ::PROTOCOL_VER,
             "username"     => $u->{'user'},
 #            "friendgroups" => 1,
             "getpickws"    => 1,
@@ -378,6 +397,7 @@ body<=
         { "noauth" => 1, }
     );
 
+    my $apikeys = DW::API::Key->get_keys_for_user($u);
     my @trusted = $u->trust_groups;
     my @groups = map { $_->{'groupname'} } @trusted;
     my @userpics = @{ $res->{'pickws'} };
@@ -421,6 +441,32 @@ body<=
     $ret .= LJ::html_text({name=>'pin', type=>'password', value=>$u->{emailpost_pin}, maxlength=>20});
     $ret .= '</div><br />';
 
+    $ret .= "<h1>$ML{'.reply.header'}</h1>";
+    $ret .= "<p>$ML{'.reply.text'}</p>";
+    $ret .= "<input type='submit' value='$ML{'.reply.button'}' name='action:token'></input>";
+
+    $ret .= "<h1>$ML{'.api.header'}</h1>";
+    $ret .= "<p>$ML{'.api.text'}</p>";
+    if (@{ $apikeys }) {
+        $ret .= "<table border=\"0\">";
+        my $count = 0;
+        for my $key (@$apikeys) {
+            $ret .= '<tr><td>';
+            $ret .= $key->{keyhash};
+            $ret .= '</td><td>';
+            # TODO: actually support delete
+            $ret .= LJ::html_check({ name => 'delete', value => $key->{keyhash} });
+            $ret .= '</td></tr>';
+            $count++;
+        }
+        $ret .= '</table><br />';
+    } else {
+    	$ret .= "<p><b>$ML{ '.api.none'}</b></p>";
+    }
+    $ret .= "<input type='submit' value='$ML{'.api.button'}' name='action:apikey'></input>";
+    $ret .= "<input type='submit' value='$ML{'.api.button.delete'}' name='action:delete'></input>";
+
+
     $ret .= "<?h1 $ML{'.settings.header'} h1?>";
     $ret .= "<?p " . BML::ml('.settings.text', {'aopts' => "href='$LJ::SITEROOT/manage/emailpost?mode=help'"}) . " p?>";
     $ret .= "<div style='margin-left:40px;'>";
@@ -453,7 +499,7 @@ body<=
 
 
     $ret .= qq{<div class='action-box'><ul class='inner nostyle'>};
-    $ret .= "<li>" . LJ::html_submit( $ML{'.save'} ) . "</li>";
+    $ret .= "<li>" . LJ::html_submit( 'save', $ML{'.save'}, { raw => "action=save"} ) . "</li>";
     $ret .= "</div><div class='clear-floats'></div>";
     $ret .= "</form>";
     $ret .= LJ::Hooks::run_hook('sms_footer');

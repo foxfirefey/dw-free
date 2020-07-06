@@ -63,8 +63,6 @@
 
 .contact.pm=Send Message
 
-.contact.txtmsg=Send Text Message
-
 .date.never=<em>Never.</em>
 
 .details.accounttype.expireson=[[type]], expires on [[date]]
@@ -117,6 +115,8 @@
 
 .details.profile.full=<a [[aopts]]>View extended profile</a>
 
+.details.rp=This account is a roleplaying account.
+
 .details.search=Search
 
 .details.supportpoints=<a [[aopts]]>Support Points</a>: [[num]]
@@ -129,7 +129,9 @@
 
 .details.title=[[user]]'s Journal
 
-.details.userpics=[[num_comma]] <a [[aopts]]>[[?num_raw|Icon|Icons]]</a>
+.details.userpics.others=[[uploaded_comma]] <a [[aopts]]>[[?uploaded_raw|Icon|Icons]] Uploaded</a>
+
+.details.userpics.self=[[uploaded_comma]] <a [[aopts]]>[[?uploaded_raw|Icon|Icons]] Uploaded</a> ([[slots_comma]] icon [[?slots_raw|slot|slots]] active, [[bonus_comma]] bonus [[?bonus_raw|icon|icons]])
 
 .details.viewlinkssep=, 
 
@@ -149,12 +151,6 @@
 
 .flag=Flag Journal
 
-.hubbub.header=PubSubHubbub Status
-
-.im.aol=AIM
-
-.im.aol.status=AIM status
-
 .im.gtalk=Google Talk
 
 .im.header=Instant Message:
@@ -163,29 +159,17 @@
 
 .im.icq=ICQ
 
-.im.icq.status=ICQ status
-
 .im.jabber=Jabber
 
 .im.lastfm=Last.fm
 
-.im.msn=MSN
-
 .im.skype=Skype
-
-.im.skype.status=Skype status
-
-.im.yim=Yahoo!
-
-.im.yim.status=Yahoo! status
 
 .label.addbuddy=Add Buddy
 
 .label.adduser=Add User
 
 .label.alsofriendof=Also Friend of:
-
-.label.aolim=AOL IM:
 
 .label.birthdate=Birthdate:
 
@@ -205,7 +189,7 @@
 
 .label.email=Email:
 
-.label.feedchange=If this feed has stopped updating because its location has changed, please contact <a [[aopts]]>Support</a> to have the location updated instead of creating a new feed.
+.label.feedchange2=If this feed has stopped updating because its location has changed, please <a [[aopts]]>submit a Support request using the category Feeds</a> instead of creating a new feed.
 
 .label.frcommunity=Communities
 
@@ -253,8 +237,6 @@
 
 .label.moredetails=(more details...)
 
-.label.msnusername=MSN Username:
-
 .label.mutual=Mutual Friends:
 
 .label.name=Name:
@@ -277,25 +259,11 @@
 
 .label.supportpoints=Support points
 
-.label.syn.hubbub.goodfor=Expiration time:
-
-.label.syn.hubbub.huburl=Hub URL:
-
-.label.syn.hubbub.id=Subscription id:
-
-.label.syn.hubbub.lastseen=Last seen at:
-
-.label.syn.hubbub.pings=Pings received:
-
-.label.syn.hubbub.topicurl=Topic URL:
-
 .label.syndicatedfrom=Source:
 
 .label.syndicatedstatus=Status:
 
 .label.syndreadcount=Subscribers:
-
-.label.textmessage=<nobr>Text<br>Message</nobr>:
 
 .label.theme=Theme:
 
@@ -308,8 +276,6 @@
 .label.viewmembers=View Members
 
 .label.website=Website:
-
-.label.yahooid=Yahoo! ID:
 
 .linking.about=To link to this user, copy this code:
 
@@ -393,23 +359,31 @@
 
 .people.watched_by.some=Subscribers ([[num]]):
 
-.pubkey.alt=View public key
-
 .section.edit=Edit
 
 .sendmessage.body2=<a [[aopts]]>Send [[user]] a text message</a><br />on his/her cellphone/pager.
 
 .service.ao3=Archive of Our Own
 
-.service.delicious=Delicious
+.service.deviantart=DeviantArt
 
 .service.diigo=Diigo
+
+.service.discord=Discord
 
 .service.etsy=Etsy
 
 .services.ffnet=FanFiction.net
 
+.service.github=GitHub
+
+.service.instagram=Instagram
+
+.service.livejournal=LiveJournal
+
 .service.pinboard=Pinboard
+
+.service.pinterest=Pinterest
 
 .service.plurk=Plurk
 

@@ -1,0 +1,670 @@
+#NEWLAYER: patsy/brulee
+layerinfo type = "theme";
+layerinfo name = "Brulee";
+layerinfo redist_uniq = "patsy/brulee";
+layerinfo author_name = "timeasmymeasure";
+
+set theme_authors = [ { "name" => "timeasmymeasure", "type" => "user" } ];
+
+##===============================
+## Page Colors
+##===============================
+
+set color_page_background = "#7f4446";
+set color_page_link = "#b12e32";
+set color_page_link_hover = "#b18e64";
+set color_page_text = "#110a07";
+set color_page_title = "#7f4446";
+set color_header_background = "#e2d19d";
+set color_header_border = "#110a07";
+set color_footer_background = "#e2d19d";
+set color_calendar_entryday_background = "#fde2c5";
+set color_calendar_header_background = "#e2d19d";
+set color_content_border = "#b18e64";
+
+##===============================
+## Entry Colors
+##===============================
+
+set color_entry_background = "#fde2c5";
+set color_entry_border = "#b19e8a";
+
+##===============================
+## Module Colors
+##===============================
+
+set color_module_background = "#ffa688";
+
+##===============================
+## Fonts
+##===============================
+
+set font_base = "Calibri";
+
+
+#NEWLAYER: patsy/claydeco
+layerinfo type = "theme";
+layerinfo name = "Clay Deco";
+layerinfo redist_uniq = "patsy/claydeco";
+layerinfo author_name = "timeasmymeasure";
+
+set theme_authors = [ { "name" => "timeasmymeasure", "type" => "user" } ];
+
+##===============================
+## Page Colors
+##===============================
+
+set color_page_background = "#6b211e";
+set color_page_link = "#ab2626";
+set color_page_link_hover = "#472b1b";
+set color_page_text = "#1c1614";
+set color_page_title = "#fae0b5";
+set color_header_background = "#bf6f5f";
+set color_header_border = "#472b1b";
+set color_header_link = "#ecd2ab";
+set color_header_link_hover = "#fae0b5";
+set color_footer_background = "#e79f89";
+set color_footer_border = "#472b1b";
+set color_footer_link = "#bf6f5f";
+set color_footer_link_active = "#6b211e";
+set color_calendar_entryday_background = "#fae0b5";
+set color_calendar_header_background = "#fae0b5";
+
+##===============================
+## Entry Colors
+##===============================
+
+set color_entry_background = "#fae0b5";
+set color_entry_border = "#bf6f5f";
+set color_entry_title = "#6b211e";
+set color_comment_title = "#6b211e";
+
+##===============================
+## Module Colors
+##===============================
+
+set color_module_background = "#ecd2ab";
+set color_module_link_hover = "#bf6f5f";
+set color_module_title = "#6b211e";
+
+##===============================
+## Fonts
+##===============================
+
+set font_base = "Calibri";
+
+
+#NEWLAYER: patsy/evening
+layerinfo "type" = "theme";
+layerinfo "name" = "Evening";
+layerinfo redist_uniq = "patsy/evening";
+layerinfo author_name = "rising";
+
+set theme_authors = [ { "name" => "rising", "type" => "user" } ];
+
+##===============================
+## Presentation
+##===============================
+
+set comment_date_format = "med_dayfirst";
+set comment_management_links = "text";
+set comment_time_format = "short_24";
+set entry_date_format = "long_day_dayfirst";
+set entry_management_links = "text";
+set entry_metadata_position = "top";
+set entry_time_format = "short_24";
+set userlite_interaction_links = "text";
+set all_entrysubjects = true;
+set entry_userpic_style = "small";
+
+##===============================
+## Page Colors
+##===============================
+
+set color_calendar_entryday_background = "#eeebf5";
+set color_calendar_header_background = "#e4e1eb";
+set color_calendar_header_text = "#0f0f0f";
+set color_comment_title = "#0f0f0f";
+set color_content_border = "#e4e1eb";
+set color_footer_background = "#fafafa";
+set color_footer_border = "#bfa2eb";
+set color_header_background = "#dfd9eb";
+set color_header_border = "#dcd3eb";
+set color_header_link = "#0f0f0f";
+set color_header_link_active = "#0f0f0f";
+set color_header_link_hover = "#0f0f0f";
+set color_header_link_visited = "#0f0f0f";
+set color_navlinks_current = "#0f0f0f";
+set color_page_background = "#685380";
+set color_page_link = "#6acc9e";
+set color_page_link_active = "#6acc9e";
+set color_page_link_hover = "#3cb0aa";
+set color_page_link_visited = "#339690";
+set color_page_text = "#0f0f0f";
+set color_page_title = "#0f0f0f";
+
+##===============================
+## Entry Colors
+##===============================
+
+set color_entry_background = "#fafafa";
+set color_entry_border = "#d9cfeb";
+set color_entry_text = "#0f0f0f";
+set color_entry_title = "#0f0f0f";
+
+##===============================
+## Module Colors
+##===============================
+
+set color_module_background = "#fafafa";
+set color_module_text = "#0f0f0f";
+set color_module_title = "#0f0f0f";
+
+##===============================
+## Fonts
+##===============================
+
+set font_base = "'News Gothic MT'";
+set font_base_size = "1";
+set font_base_units = "em";
+set font_comment_title = "Metamorphous";
+set font_entry_title = "Metamorphous";
+set font_fallback = "sans-serif";
+set font_journal_subtitle = "Metamorphous";
+set font_journal_title = "Metamorphous";
+set font_module_heading = "Metamorphous";
+set font_sources = "https://fonts.googleapis.com/css?family=Metamorphous&subset=latin,latin-ext";
+
+function Page::print_theme_stylesheet() {
+"""
+    /* Text effects
+    ******************************/
+
+    a:hover {
+        text-decoration: underline;
+    }
+
+    blockquote {
+        background: $*color_entry_background !important;
+        border: none;
+        color: inherit;
+        font-style: normal;
+        font-size: inherit;
+        margin-top: .5em;
+        margin-bottom: .5em;
+        padding: .5em;
+    }
+
+    code {
+        font-family: 'Courier New', monospace;
+        font-size: .9em;
+    }
+
+    /* Text placement
+    ******************************/
+
+    #primary,
+    #secondary,
+    #tertiary,
+    #comment,
+    #footer,
+    .module-content {
+        text-align: left;
+        line-height: 1.2em;
+    }
+
+""";
+}
+
+
+#NEWLAYER: patsy/foggybeach
+layerinfo type = "theme";
+layerinfo name = "Foggy Beach";
+layerinfo redist_uniq = "patsy/foggybeach";
+layerinfo author_name = "timeasmymeasure";
+
+set theme_authors = [ { "name" => "timeasmymeasure", "type" => "user" } ];
+
+##===============================
+## Page Colors
+##===============================
+
+set color_page_background = "#a2947a";
+set color_page_link = "#4c4b50";
+set color_page_link_hover = "#929AA6";
+set color_page_text = "#523e30";
+set color_header_background = "#c0ac9b";
+set color_header_border = "#a2947a";
+set color_header_link = "#4c4b50";
+set color_header_link_hover = "#e7e1d9";
+set color_footer_background = "#c0ac9b";
+set color_calendar_entryday_background = "#e7e1d9";
+set color_calendar_header_background = "#e7e1d9";
+set color_content_border = "#4c4b50";
+
+##===============================
+## Entry Colors
+##===============================
+
+set color_entry_background = "#e7e1d9";
+set color_entry_border = "#4c4b50";
+
+##===============================
+## Module Colors
+##===============================
+
+set color_module_background = "#dcdee1";
+
+
+#NEWLAYER: patsy/glossalia
+layerinfo type = "theme";
+layerinfo name = "Glossalia";
+layerinfo redist_uniq = "patsy/glossalia";
+layerinfo author_name = "timeasmymeasure";
+
+set theme_authors = [ { "name" => "timeasmymeasure", "type" => "user" } ];
+
+##===============================
+## Page Colors
+##===============================
+
+set color_page_background = "#77594f";
+set color_page_link = "#6c2f36";
+set color_page_link_hover = "#77594f";
+set color_page_text = "#2b0919";
+set color_page_title = "#d8f4c3";
+set color_header_background = "#6c2f36";
+set color_header_border = "#77594f";
+set color_header_link = "#fea64f";
+set color_header_link_hover = "#d8f4c3";
+set color_footer_background = "#6c2f36";
+set color_footer_link_hover = "#77594f";
+set color_calendar_entryday_background = "#d8f4c3";
+set color_calendar_header_background = "#d8f4c3";
+set color_content_border = "#77594f";
+
+##===============================
+## Entry Colors
+##===============================
+
+set color_entry_background = "#d8f4c3";
+set color_entry_border = "#6c2f36";
+set color_entry_link = "#6c2f36";
+set color_entry_link_hover = "#fea64f";
+
+##===============================
+## Module Colors
+##===============================
+
+set color_module_background = "#fea64f";
+set color_module_link = "#6c2f36";
+set color_module_link_hover = "#77594f";
+set color_module_title = "2b0919";
+
+
+#NEWLAYER: patsy/hollowsilence
+layerinfo "type" = "theme";
+layerinfo "name" = "Hollow Silence";
+layerinfo redist_uniq = "patsy/hollowsilence";
+layerinfo author_name = "rising";
+
+set theme_authors = [ { "name" => "rising", "type" => "user" } ];
+
+##===============================
+## Presentation
+##===============================
+
+set all_entrysubjects = true;
+set comment_date_format = "med_dayfirst";
+set comment_management_links = "text";
+set comment_time_format = "short_24";
+set entry_date_format = "long_day_dayfirst";
+set entry_management_links = "text";
+set entry_metadata_position = "top";
+set entry_time_format = "short_24";
+set entry_userpic_style = "small";
+set userlite_interaction_links = "text";
+
+##===============================
+## Page Colors
+##===============================
+
+set color_calendar_entryday_background = "#d7eadc";
+set color_calendar_header_background = "#c8ead2";
+set color_calendar_header_text = "#1d1919";
+set color_content_border = "#d8f0df";
+set color_footer_background = "#fdfdfd";
+set color_footer_border = "#beeacc";
+set color_footer_link = "#518c80";
+set color_footer_link_active = "#406e65";
+set color_footer_link_hover = "#7762c8";
+set color_footer_link_visited = "#4b4543";
+set color_header_background = "#aed6bb";
+set color_header_border = "#beeacc";
+set color_header_link = "#fdfdfd";
+set color_header_link_active = "#fdfdfd";
+set color_header_link_hover = "#fdfdfd";
+set color_header_link_visited = "#fdfad5";
+set color_navlinks_current = "#fdfad5";
+set color_page_background = "#87b899";
+set color_page_link = "#518c80";
+set color_page_link_active = "#406e65";
+set color_page_link_hover = "#7762c8";
+set color_page_link_visited = "#4b4543";
+set color_page_text = "#1d1919";
+
+##===============================
+## Entry Colors
+##===============================
+
+set color_comment_title = "#1d1919";
+set color_entry_background = "#fdfdfd";
+set color_entry_border = "#c8ead2";
+set color_entry_interaction_links = "#988dc8";
+set color_entry_link = "#518c80";
+set color_entry_link_active = "#406e65";
+set color_entry_link_hover = "#7762c8";
+set color_entry_link_visited = "#4b4543";
+set color_entry_text = "#1d1919";
+set color_entry_title = "#1d1919";
+set color_entry_title_background = "#d7eadc";
+
+##===============================
+## Module Colors
+##===============================
+
+set color_module_background = "#fdfdfd";
+set color_module_link = "#518c80";
+set color_module_link_active = "#406e65";
+set color_module_link_hover = "#7762c8";
+set color_module_link_visited = "#4b4543";
+set color_module_text = "#1d1919";
+set color_module_title = "#1d1919";
+set color_module_title_background = "#d7eadc";
+
+##===============================
+## Fonts
+##===============================
+
+set font_base = "'News Gothic MT'";
+set font_base_size = "1";
+set font_base_units = "em";
+set font_comment_title = "Metamorphous";
+set font_entry_title = "Metamorphous";
+set font_fallback = "sans-serif";
+set font_journal_subtitle = "Metamorphous";
+set font_journal_title = "Metamorphous";
+set font_module_heading = "Metamorphous";
+set font_sources = "https://fonts.googleapis.com/css?family=Metamorphous&subset=latin,latin-ext";
+
+function Page::print_theme_stylesheet() {
+"""
+    /* Text effects
+    ******************************/
+
+    a:hover {
+        text-decoration: underline;
+    }
+
+    blockquote {
+        background: $*color_entry_background !important;
+        border: none;
+        color: inherit;
+        font-style: normal;
+        font-size: inherit;
+        margin-top: .5em;
+        margin-bottom: .5em;
+        padding: .5em;
+    }
+
+    code {
+        font-family: 'Courier New', monospace;
+        font-size: .9em;
+    }
+
+    /* Text placement
+    ******************************/
+
+    #primary,
+    #secondary,
+    #tertiary,
+    #comment,
+    #footer,
+    .module-content {
+        text-align: left;
+        line-height: 1.2em;
+    }
+
+""";
+}
+
+
+#NEWLAYER: patsy/retro
+layerinfo type = "theme";
+layerinfo name = "Retro";
+layerinfo redist_uniq = "patsy/retro";
+layerinfo author_name = "renoir";
+
+##===============================
+## Page Colors
+##===============================
+
+set color_calendar_header_background = "#ddd";
+set color_content_border = "#472b1b";
+set color_footer_background = "#f0c048";
+set color_footer_border = "#f0a830";
+set color_footer_link = "#f2ebd7";
+set color_footer_link_active = "#51a3b0";
+set color_header_background = "#f0c048";
+set color_header_border = "#f0a830";
+set color_header_link = "#f2ebd7";
+set color_header_link_hover = "#51a3b0";
+set color_page_background = "#7dc1cd";
+set color_page_link = "#51a3b0";
+set color_page_link_hover = "#f0a830";
+set color_page_text = "#aaa";
+set color_page_title = "#f2ebd7";
+
+##===============================
+## Page Colors
+##===============================
+
+set color_module_title = "#d9d0bd";
+set color_module_background = "#fff";
+
+##===============================
+## Entry Colors/Style
+##===============================
+
+set color_calendar_entryday_background = "#eee";
+set color_entry_background = "#fff";
+set color_entry_border = "#f2ebd7";
+set color_entry_title = "#099aaf";
+set entry_userpic_style = "small";
+
+##===============================
+## Fonts
+##===============================
+
+set font_base = "'Lucida Grande', 'Lucida Sans Unicode', Helvetica";
+
+
+#NEWLAYER: patsy/todayimhappy
+layerinfo "type" = "theme";
+layerinfo "name" = "Today I'm happy";
+layerinfo redist_uniq = "patsy/todayimhappy";
+layerinfo author_name = "rising";
+
+set theme_authors = [ { "name" => "rising", "type" => "user" } ];
+
+##===============================
+## Presentation
+##===============================
+
+set all_entrysubjects = true;
+set comment_date_format = "med_dayfirst";
+set comment_management_links = "text";
+set comment_time_format = "short_24";
+set entry_date_format = "long_day_dayfirst";
+set entry_management_links = "text";
+set entry_metadata_position = "top";
+set entry_time_format = "short_24";
+set entry_userpic_style = "small";
+set userlite_interaction_links = "text";
+
+##===============================
+## Page Colors
+##===============================
+
+set color_calendar_entryday_background = "#fce8ec";
+set color_calendar_header_background = "#fcd4dd";
+set color_calendar_header_text = "#f06280";
+set color_content_border = "#ecd079";
+set color_footer_background = "#f5fcf5";
+set color_footer_border = "#eb7967";
+set color_footer_link = "#c02948";
+set color_footer_link_active = "#c02948";
+set color_footer_link_hover = "#489ca0";
+set color_footer_link_visited = "#442432";
+set color_header_background = "#c02948";
+set color_header_border = "#d95b45";
+set color_header_link = "#f5fcf5";
+set color_header_link_active = "#f5fcf5";
+set color_header_link_hover = "#f5fcf5";
+set color_header_link_visited = "#fcd4dd";
+set color_page_background = "#442432";
+set color_page_link = "#c02948";
+set color_page_link_active = "#c02948";
+set color_page_link_hover = "#489ca0";
+set color_page_link_visited = "#442432";
+set color_page_text = "#0a0a0a";
+set color_page_title = "#f5fcf5";
+
+##===============================
+## Entry Colors
+##===============================
+
+set color_comment_title = "#0a0a0a";
+set color_entry_background = "#f5fcf5";
+set color_entry_border = "#eb7967";
+set color_entry_interaction_links = "#f06280";
+set color_entry_link = "#c02948";
+set color_entry_link_active = "#c02948";
+set color_entry_link_hover = "#489ca0";
+set color_entry_link_visited = "#442432";
+set color_entry_text = "#0a0a0a";
+set color_entry_title = "#0a0a0a";
+
+##===============================
+## Module Colors
+##===============================
+
+set color_module_background = "#f5fcf5";
+set color_module_link = "#c02948";
+set color_module_link_active = "#c02948";
+set color_module_link_hover = "#489ca0";
+set color_module_link_visited = "#442432";
+set color_module_text = "#0a0a0a";
+set color_module_title = "#0a0a0a";
+
+##===============================
+## Fonts
+##===============================
+
+set font_base = "'News Gothic MT'";
+set font_base_size = "1";
+set font_base_units = "em";
+set font_comment_title = "Metamorphous";
+set font_entry_title = "Metamorphous";
+set font_fallback = "sans-serif";
+set font_journal_subtitle = "Metamorphous";
+set font_journal_title = "Metamorphous";
+set font_module_heading = "Metamorphous";
+set font_sources = "https://fonts.googleapis.com/css?family=Metamorphous&subset=latin,latin-ext";
+
+function Page::print_theme_stylesheet() {
+"""
+    /* Text effects
+    ******************************/
+
+    a:hover {
+        text-decoration: underline;
+    }
+
+    blockquote {
+        background: $*color_entry_background !important;
+        border: none;
+        color: inherit;
+        font-style: normal;
+        font-size: inherit;
+        margin-top: .5em;
+        margin-bottom: .5em;
+        padding: .5em;
+    }
+
+    code {
+        font-family: 'Courier New', monospace;
+        font-size: .9em;
+    }
+
+    /* Text placement
+    ******************************/
+
+    #primary,
+    #secondary,
+    #tertiary,
+    #comment,
+    #footer,
+    .module-content {
+        text-align: left;
+        line-height: 1.2em;
+    }
+
+""";
+}
+
+
+#NEWLAYER: patsy/vintagesorbet
+layerinfo type = "theme";
+layerinfo name = "Vintage Sorbet";
+layerinfo redist_uniq = "patsy/vintagesorbet";
+layerinfo author_name = "timeasmymeasure";
+
+set theme_authors = [ { "name" => "timeasmymeasure", "type" => "user" } ];
+
+##===============================
+## Page Colors
+##===============================
+
+set color_page_background = "#726956";
+set color_page_link = "#c4383e";
+set color_page_link_hover = "#7aaf8e";
+set color_page_text = "#4e473b";
+set color_page_title = "#2b2824";
+set color_header_background = "#92d1ab";
+set color_header_border = "#726956";
+set color_header_link = "#c4383e";
+set color_header_link_hover = "#fce8be";
+set color_footer_background = "#92d1ab";
+set color_calendar_entryday_background = "#fce8be";
+set color_calendar_header_background = "#fce8be";
+set color_content_border = "#c4383e";
+
+##===============================
+## Entry Colors
+##===============================
+
+set color_entry_background = "#fce8be";
+set color_entry_border = "#c4383e";
+
+##===============================
+## Module Colors
+##===============================
+
+set color_module_background = "#ffcd57";
+
+##===============================
+## Fonts
+##===============================
+
+set font_base = "Calibri";

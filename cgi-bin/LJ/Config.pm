@@ -18,25 +18,50 @@ use strict;
 use warnings;
 
 $LJ::HOME ||= $ENV{LJHOME};
-$LJ::CONFIG_LOADED = 0;
+$LJ::CONFIG_LOADED        = 0;
 $LJ::CACHE_CONFIG_MODTIME = 0;
 
 # what files to check for config, ORDER MATTERS, please go from most specific
 # to least specific.  files later in the chain should be careful to not clobber
 # anything.
-@LJ::CONFIG_FILES = ( ( map { LJ::resolve_file($_) } qw(
-    etc/config-private.pl
-    etc/config-local.pl
-    etc/config.pl
-) ) , ( map { $LJ::HOME . "/" . $_ } qw(
-    cgi-bin/LJ/Global/Defaults.pm
-) ) );
+@LJ::CONFIG_FILES = $LJ::_T_CONFIG
+    ? (
+    (
+        map { LJ::resolve_file($_) }
+            qw(
+            t/config-test-private.pl
+            t/config-test.pl
+            )
+    ),
+    (
+        map { $LJ::HOME . "/" . $_ }
+            qw(
+            cgi-bin/LJ/Global/Defaults.pm
+            )
+    )
+    )
+    : (
+    (
+        map { LJ::resolve_file($_) }
+            qw(
+            etc/config-private.pl
+            etc/config-local.pl
+            etc/config.pl
+            )
+    ),
+    (
+        map { $LJ::HOME . "/" . $_ }
+            qw(
+            cgi-bin/LJ/Global/Defaults.pm
+            )
+    )
+    );
 
 # loads all configurations from scratch
 sub load {
     my $class = shift;
-    my %opts = @_;
-    return if ! $opts{force} && $LJ::CONFIG_LOADED;
+    my %opts  = @_;
+    return if !$opts{force} && $LJ::CONFIG_LOADED;
 
     __PACKAGE__->load_config;
 
@@ -49,21 +74,8 @@ sub reload {
     eval {
         # these need to be loaded after ljconfig
         #
-        $LJ::DBIRole->set_sources(\%LJ::DBINFO);
+        $LJ::DBIRole->set_sources( \%LJ::DBINFO );
         LJ::MemCache::reload_conf();
-        LJ::ExternalSite->forget_site_objs;
-        LJ::AccessLogSink->forget_sink_objs;
-
-        # reload MogileFS config
-        if (LJ::mogclient()) {
-            LJ::mogclient()->reload
-                ( domain => $LJ::MOGILEFS_CONFIG{domain},
-                  root   => $LJ::MOGILEFS_CONFIG{root},
-                  hosts  => $LJ::MOGILEFS_CONFIG{hosts},
-                  readonly => $LJ::DISABLE_MEDIA_UPLOADS, );
-              LJ::mogclient()->set_pref_ip(\%LJ::MOGILEFS_PREF_IP)
-                  if %LJ::MOGILEFS_PREF_IP;
-          }
     };
 
     warn "Errors reloading config: $@" if $@;
@@ -71,7 +83,7 @@ sub reload {
 
 # load configuration files
 sub load_config {
-    foreach my $fn ( @LJ::CONFIG_FILES ) {
+    foreach my $fn (@LJ::CONFIG_FILES) {
         do $fn
             if -e $fn;
     }
@@ -80,33 +92,37 @@ sub load_config {
 
 # handle reloading at the start of a new web request
 sub start_request_reload {
+
     # check the modtime of etc/config.pl and reload if necessary
     # only do a stat every 10 seconds and then only reload
     # if the file has changed
     my $now = time();
-    if ($now - $LJ::CACHE_CONFIG_MODTIME_LASTCHECK > 10) {
+    if ( $now - $LJ::CACHE_CONFIG_MODTIME_LASTCHECK > 10 ) {
 
         my $modtime;
-        foreach my $fn ( @LJ::CONFIG_FILES ) {
+        foreach my $fn (@LJ::CONFIG_FILES) {
             next unless -e $fn;
-            my $cmodtime = (stat($fn))[9];
+            my $cmodtime = ( stat($fn) )[9];
             $modtime = $cmodtime
-                if ! defined $modtime || $modtime < $cmodtime;
+                if !defined $modtime || $modtime < $cmodtime;
         }
 
-        if ( ! $LJ::CACHE_CONFIG_MODTIME || $modtime > $LJ::CACHE_CONFIG_MODTIME ) {
+        if ( !$LJ::CACHE_CONFIG_MODTIME || $modtime > $LJ::CACHE_CONFIG_MODTIME ) {
 
             # reload config and update cached modtime
             $LJ::CACHE_CONFIG_MODTIME = $modtime;
             __PACKAGE__->reload;
             $LJ::DEBUG_HOOK{'pre_save_bak_stats'}->() if $LJ::DEBUG_HOOK{'pre_save_bak_stats'};
 
-            $LJ::IMGPREFIX_BAK = $LJ::IMGPREFIX;
-            $LJ::STATPREFIX_BAK = $LJ::STATPREFIX;
-            $LJ::USERPICROOT_BAK = $LJ::USERPIC_ROOT;
+            # save a backup of the original config value
+            %LJ::_ORIG_CONFIG = ();
+            $LJ::_ORIG_CONFIG{$_} = ${ $LJ::{$_} }
+                foreach qw(IMGPREFIX JSPREFIX STATPREFIX WSTATPREFIX USERPIC_ROOT SITEROOT);
+
             $LJ::LOCKER_OBJ = undef;
 
-            if ($modtime > $now - 60) {
+            if ( $modtime > $now - 60 ) {
+
                 # show to stderr current reloads.  won't show
                 # reloads happening from new apache children
                 # forking off the parent who got the inital config loaded

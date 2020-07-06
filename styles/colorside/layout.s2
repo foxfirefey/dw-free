@@ -1,0 +1,446 @@
+layerinfo "type" = "layout";
+layerinfo "name" = "ColorSide";
+layerinfo redist_uniq = "colorside/layout";
+layerinfo author_name = "branchandroot";
+layerinfo lang = "en";
+
+set layout_authors = [ { "name" => "branchandroot", "type" => "user" } ];
+set layout_type = "two-columns-right";
+set userpics_position = "right";
+
+propgroup colors_child {
+
+    property use color_page_details_text;
+}
+
+set color_page_details_text = "#999";
+
+##===============================
+## Fonts
+##===============================
+
+set font_journal_title = "'Century Gothic', Verdana, sans-serif";
+set font_journal_subtitle = "'Century Gothic', Verdana, sans-serif";
+set font_entry_title = "'Century Gothic', Verdana, sans-serif";
+set font_comment_title = "'Century Gothic', Verdana, sans-serif";
+set font_module_heading = "'Century Gothic', Verdana, sans-serif";
+
+##===============================
+## Stylesheet
+##===============================
+
+function print_stylesheet() {
+    var string medium_media_query = generate_medium_media_query();
+
+    var string canvas_colors = generate_color_css( new Color, $*color_page_background, new Color );
+
+    var string entry_header_colors = generate_color_css( new Color, $*color_entry_title_background, new Color );
+    var string entry_title_link_colors = generate_color_css( $*color_entry_title, new Color, new Color );
+    var string entry_elements_colors = generate_color_css( new Color, $*color_page_background, new Color );
+
+    var string bottomcomment_colors = generate_color_css( $*color_entry_title, $*color_entry_title_background, new Color );
+    var string bottomcomment_link_colors = generate_color_css( $*color_entry_title, new Color, new Color );
+
+    var string module_colors = generate_color_css( $*color_module_text, $*color_module_background, new Color );
+    var string module_link_colors = generate_color_css( $*color_module_link, new Color, new Color );
+    var string module_header_colors = generate_color_css( $*color_module_title, $*color_module_title_background, new Color );
+    var string module_header_link_colors = generate_color_css( $*color_module_title, new Color, new Color );
+    var string module_alt_colors = generate_color_css( $*color_page_text, $*color_page_background, new Color );
+    var string module_alt_link_colors = generate_color_css( $*color_page_link, new Color, new Color );
+
+    var string footer_colors = generate_color_css( new Color, $*color_page_background, new Color );
+
+    var string entry_content_padding = "";
+    if ( $*color_entry_background.as_string != $*color_page_background.as_string ) {
+        $entry_content_padding = "padding: 5px;";
+    }
+
+    var string entry_padding = "";
+    if ( $*entry_userpic_style == "" ) { $entry_padding = "110px"; }
+    elseif ( $*entry_userpic_style == "small" ) { $entry_padding = "85px"; }
+    elseif ( $*entry_userpic_style == "smaller" ) { $entry_padding = "60px"; }
+
+    var string comment_padding = "";
+    if ( $*comment_userpic_style == "" ) { $comment_padding = "110px"; }
+    elseif ( $*comment_userpic_style == "small" ) { $comment_padding = "85px"; }
+    elseif ( $*comment_userpic_style == "smaller" ) { $comment_padding = "60px"; }
+
+    var string userpic_css = "";
+        if ($*userpics_position == "left") {
+            $userpic_css = """
+            .has-userpic .entry .entry-title,
+            .has-userpic .entry .access-filter,
+            .has-userpic .entry .restrictions,
+            .has-userpic .entry .datetime,
+            .has-userpic .entry .poster {
+                padding-left: $entry_padding;
+                }
+
+            .has-userpic .comment .header,
+            .has-userpic .comment .poster,
+            .has-userpic .comment .poster-ip {
+                padding-left: $comment_padding;
+                }
+
+            .has-userpic .entry .contents .userpic,
+            .has-userpic .comment .contents .userpic { left: 5px; }
+            """;
+        }
+        elseif ($*userpics_position == "right") {
+            $userpic_css = """
+            .has-userpic .entry .entry-title,
+            .has-userpic .entry .restrictions,
+            .has-userpic .entry .datetime,
+            .has-userpic .entry .poster {
+                padding-right: $entry_padding;
+                }
+
+            .has-userpic .comment .header,
+            .has-userpic .comment .poster,
+            .has-userpic .comment .poster-ip {
+                padding-right: $comment_padding;
+                }
+
+            .has-userpic .entry .contents .userpic,
+            .has-userpic .comment .contents .userpic { right: 5px; }
+            """;
+        }
+    """
+
+/* ColorSide */
+
+blockquote { font-style: italic; }
+dl dt { font-weight: bold; }
+
+h1, h2, h3 {
+    font-weight: normal;
+    }
+
+a { text-decoration: none; }
+
+a:hover { text-decoration: underline; }
+
+body { border: none;
+    background-color: $*color_page_border;
+    }
+
+#canvas { 
+    margin-left: 4%; 
+    margin-right: 4%; 
+}
+
+#canvas > .inner:first-child { $canvas_colors
+padding: 0 2%;
+width: 96% !important; }
+
+.one-column #canvas { display: block; }
+
+
+/* header */
+
+#header { padding: 1px 250px 1em 0;
+    margin-bottom: 1em; }
+
+#title { font-size: x-large; }
+#title a { color: $*color_page_text; }
+#subtitle { font-size: large; }
+#pagetitle { font-size:  medium;
+    font-weight: bold; }
+
+
+/* main column */
+
+.any-column #primary > .inner:first-child {
+    padding: 0 1em;
+}
+
+.page-entry.any-column #primary > .inner:first-child {
+    padding: 0;
+}
+
+@media $medium_media_query {
+    .two-columns-left #primary > .inner:first-child,
+    .three-columns-left #primary > .inner:first-child {
+        padding: 0 0 0 1em !important;
+    }
+
+    .two-columns-right #primary > .inner:first-child,
+    .three-columns-right #primary > .inner:first-child {
+        padding: 0 1em 0 0 !important;
+    }
+
+    .two-columns-left .navigation,
+    .three-columns-left .navigation { text-align: right; }
+}
+
+/* entries */
+.entry li { margin-left: 1em; }
+.entry-content hr { display: block;
+    margin: 1em 10%; }
+
+.entry { margin: 0 0 50px 0;
+    padding: 10px 1em 0 1em; /* gap/margin fix */
+    position: relative; }
+
+.entry .header { $entry_header_colors
+    padding: 0;
+    margin: 0 0 .5em 0;}
+
+.entry .entry-title {
+    margin: 5px;
+    padding: .15em 0;
+    }
+
+.no-subject .entry-title {
+    padding: 0;
+    }
+
+.entry .entry-title a, 
+.entry .entry-title a:visited { $entry_title_link_colors }
+
+.entry .restrictions  { display: block; 
+    font-size: small;
+    padding: .5em 5px 0 5px;
+    $entry_elements_colors }
+
+.entry .access-filter { float: left;
+    margin-top: .40em;
+    margin-right: 5px; }
+
+.entry .datetime { display: block;
+    font-size: small;
+    padding: .5em 5px;
+    $entry_elements_colors }
+
+.entry .poster { display: block;
+margin: .75em 0; }
+
+.entry .contents .userpic { position: absolute;
+top: -1em; }
+
+.entry-content { $entry_content_padding }
+
+.has-userpic .entry-content {
+    margin-top: 2.25em;
+    }
+
+.has-userpic.no-subject .entry-content {
+    margin-top: 2.75em;
+    }
+
+.page-recent .security-public.restrictions-none.journal-type-P.has-userpic.no-subject .entry-content,
+.page-day .security-public.restrictions-none.journal-type-P.has-userpic.no-subject .entry-content {
+    margin-top: 4.75em;
+    }
+
+.metadata { margin: 1em 0 0 0; }
+.metadata.top-metadata { margin-top: 1.25em; margin-bottom: 2em; }
+.metadata-label { font-weight: bold; }
+.metadata ul li { margin-left: 0; padding-left: 0; }
+
+.entry .footer { margin: .5em 0; }
+.entry .footer > .inner:first-child { padding: 1px; } /*float uneveness fix */
+
+.entry .tag { margin-left: .25em; }
+.entry .tag li { margin-left: 0; padding: .25em 0; }
+.entry .tag-text { font-weight: bold; }
+
+ul.entry-management-links { float: left;
+    margin-left: -1em;
+    margin-top: 1em; }
+ul.entry-interaction-links { text-align: right;
+    margin-top: 1em;
+    min-height: 17px; } /* prevent entry-management icons from shoving quickreply aside */
+
+/* comments */
+.comment { margin: 0 0 20px 0;
+    padding: 15px 1em 0 1em;
+    position: relative;
+    $entry_elements_colors }
+
+.partial .comment { margin: 0 0 0 0; 
+    padding: 1px .5em 0 .5em;}
+
+.comment .header { $entry_header_colors
+    padding: 5px;
+    margin: 0 0 1em 0;}
+.comment .header a, 
+.comment .header a:visited { $entry_title_link_colors }
+
+.comment-title {
+    font-weight: bold;
+    padding: 0 0 .25em;
+    }
+
+.partial .comment-title {
+   display: inline;
+   margin-right: .2em;
+   }
+
+.partial .comment-poster:before {
+   content: "- ";
+   }
+
+.comment .poster { display: block; }
+.partial .poster { display: inline; }
+.comment .poster-ip { font-size: small;
+    color: $*color_page_details_text; }
+
+.comment .contents .userpic { position: absolute;
+top: 0; }
+
+.comment-content { margin-top: 1em; }
+
+.has-userpic .comment-content { margin-top: 2em; }
+
+.comment .edittime { margin-top: 1em; }
+.comment .header .datetime { font-size: small;
+    color: $*color_entry_title; }
+
+.comment .multiform-checkbox { display: block;
+    text-align: right;
+    font-size: small;
+    color: $*color_entry_text;
+}
+
+.comment .footer { margin: .5em 0; }
+.comment .footer > .inner:first-child { padding: 1px; } /*float uneveness fix */
+
+.comment-management-links { float: right; }
+.comment-interaction-links { text-align: left; }
+
+.bottomcomment, .comments-message { padding: .25em;
+    $bottomcomment_colors }
+.bottomcomment a,
+.bottomcomment a:visited { $bottomcomment_link_colors }
+
+.bottomcomment .entry-management-links,
+.bottomcomment .entry-interaction-links { margin: .25em 0 .5em 0; }
+
+.comment-pages { text-align: center; }
+
+#qrdiv { margin: 1em; }
+#qrdiv table { width: 100%; }
+
+
+/* archive */
+
+/* year-by-month view */
+#archive-year .navigation { text-align: left; }
+
+div.month { margin: 0 0 2em 0; }
+
+table.month td,
+table.month th { border-color: $*color_page_details_text;
+    vertical-align: top; }
+
+#archive-year .month H3 { font-family: $*font_entry_title; }
+
+.month caption { display: none; }
+
+#archive-year .month .footer { padding: .5em;
+text-align: center; }
+
+/* month-by-day view */
+#archive-month .navigation { text-align: center; }
+
+.month dl .tag-text { font-style: italic; }
+
+.month dl h3.entry-title { font-weight: bold;
+    font-family: $*font_entry_title; }
+
+/* day-by-entries view */
+.day .inner > h3:first-child { text-align: center;
+    font-family: $*font_journal_title; }
+
+/* icons */
+
+.sorting-options ul {
+    padding-left: 0;
+}
+
+.icons-container .icon {
+    margin: 1em 0;
+    }
+
+.icon-image {
+    float: left;
+    clear: left;
+    margin-bottom: .25em;
+    min-width: 100px;
+    padding-right: 1em;
+    }
+
+.icon-info {
+    min-height: 100px;
+    }
+
+.icon-info span {
+    font-weight: bold;
+    }
+
+.icon-info .default {
+    text-decoration: underline;
+    }
+
+/* sidebars */
+
+#secondary > .inner:first-child,
+#tertiary > .inner:first-child {
+    padding: .5em 0 !important;
+    margin: 0 .25em;
+}
+
+#secondary > .inner:first-child,
+.any-column #tertiary > .inner:first-child { $module_colors }
+
+#secondary a,
+#secondary a:visited,
+.any-column #tertiary a,
+.one-column #tertiary a:visited { $module_link_colors text-decoration: underline; }
+
+#secondary a:hover,
+.any-column #tertiary a:hover { text-decoration: none; }
+
+#secondary .module-header a,
+#secondary .module-header a:visited,
+.any-column #tertiary .module-header a,
+.one-column #tertiary .module-header a:visited { $module_header_link_colors }
+
+@media $medium_media_query {
+    .two-columns #tertiary > .inner:first-child, .two-columns #tertiary .module { $module_alt_colors }
+
+    .two-columns #tertiary a,
+    .two-columns #tertiary a:visited,
+    .two-columns #tertiary .module-header a,
+    .two-columns #tertiary .module-header a:visited { $module_alt_link_colors text-decoration: none; }
+
+    .two-columns #tertiary a:hover { text-decoration: underline; }
+}
+
+.module {  padding: 3px; 
+    margin: .25em; }
+    
+.module-header { $module_header_colors
+    padding: 1px 3px;
+    text-align: center;
+    font-size: large; }
+
+.module-userprofile { text-align: center; }
+
+.module-customtext .module-content { padding: .25em 0; }
+
+.module-navlinks ul,
+.module-typelist ul { list-style: none; }
+
+/* footer */
+
+#footer { $footer_colors
+ width: 96% !important;
+ padding: 1em 2%; }
+
+$userpic_css
+    """;
+
+
+}

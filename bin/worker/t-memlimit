@@ -13,7 +13,10 @@
 # part of this distribution.
 
 use strict;
-use lib "$ENV{LJHOME}/cgi-bin";
+BEGIN {
+    require "$ENV{LJHOME}/cgi-bin/ljlib.pl";
+}
+
 LJ::Worker::Test->set_memory_limit(40*1024*1024); # 80MB memory limit
 LJ::Worker::Test->run;
 

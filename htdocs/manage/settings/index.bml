@@ -22,14 +22,26 @@ body<=
     BML::set_language_scope('/manage/settings/index.bml');
 
     LJ::need_res("stc/tabs.css", "stc/settings.css", "js/settings.js");
-    LJ::set_active_crumb('manage');
+
+    LJ::need_res({ group => 'jquery' },
+        "js/jquery.settings.js"
+    );
+    LJ::set_active_resource_group( "jquery" );
 
     my $remote = LJ::get_remote();
     my $authas;
     my $u;
 
-    if ($remote) {
-        $authas = $GET{authas} || $remote->user;
+    $authas = $GET{authas} || $remote->user if $remote;
+
+    my $can_view_other = $remote && $remote->has_priv( "canview", "subscriptions" );
+
+    if ( $can_view_other && $GET{user} && $GET{cat} && $GET{cat} eq 'notifications' ) {
+        # impersonation mode - check for $u->user ne $authas
+        $u = LJ::load_user( $GET{user} );
+    }
+
+    if ( $remote && ! defined $u ) {
         $u = LJ::get_authas_user($authas);
         return LJ::bad_input($ML{'error.invalidauth'})
             unless $u;
@@ -38,8 +50,10 @@ body<=
     my @cats_order = qw(
         account
         display
+        community
         notifications
         mobile
+        shortcuts
         privacy
         history
         othersites
@@ -58,7 +72,6 @@ body<=
                 LJ::Setting::Display::AccountStatus
                 LJ::Setting::Display::Email
                 LJ::Setting::Display::Password
-                LJ::Setting::Display::DomainMapping
             )],
         },
         display => {
@@ -93,7 +106,24 @@ body<=
                 DW::Setting::GoogleAnalytics
                 DW::Setting::ExcludeOwnStats
                 DW::Setting::StickyEntry
+                DW::Setting::MobileView
+                DW::Setting::RPAccount
                 LJ::Setting::SiteScheme
+            )],
+        },
+        shortcuts => {
+            name => $ML{'.cat.shortcuts'},
+            visible => 1,
+            disabled => !$u || $u->is_community ? 1 : 0,
+            form => 1,
+            desc => $ML{'.cat.shortcuts.desc2'},
+            settings => [qw(
+                DW::Setting::Shortcuts
+                DW::Setting::ShortcutsNext
+                DW::Setting::ShortcutsPrev
+                DW::Setting::ShortcutsTouch
+                DW::Setting::ShortcutsTouchNext
+                DW::Setting::ShortcutsTouchPrev
             )],
         },
         notifications => {
@@ -102,20 +132,16 @@ body<=
             disabled => !$u || $u->is_community ? 1 : 0,
             form => 1,
             desc => BML::ml( '.cat.notifications.desc', { aopts => "href='$LJ::SITEROOT/manage/circle/edit'" } ),
-            settings => [qw(
-                LJ::Setting::CommentEmailNotify
-                LJ::Setting::SelfCommentEmail
-            )],
+            settings => [],
         },
         mobile => {
             name => $ML{'.cat.mobile'},
             visible => 1,
             disabled => !$u || $u->is_community ? 1 : 0,
             form => 1,
-            desc => $ML{'.cat.mobile.desc'},
+            desc => $ML{'.cat.mobile.desc2'},
             settings => [qw(
                 LJ::Setting::EmailPosting
-                DW::Setting::TxtMsgSetup
             )],
         },
         privacy => {
@@ -155,6 +181,7 @@ body<=
                 LJ::Setting::Display::Emails
                 LJ::Setting::Display::EmailPosts
                 LJ::Setting::Display::Orders
+                DW::Setting::Display::CommunityInvites
                 DW::Setting::Display::OpenIDClaim
             )],
         },
@@ -169,6 +196,22 @@ body<=
              )],
 
         },
+        community => {
+            name => $ML{'.cat.community'},
+            visible => $u && $u->is_community ? 1 : 0,
+            disabled => 0,
+            form => 1,
+            desc => $ML{'.cat.community.desc'},
+            settings => [qw(
+                DW::Setting::CommunityMembership
+                DW::Setting::CommunityPostLevel
+                DW::Setting::CommunityPostLevelNew
+                DW::Setting::CommunityEntryModeration
+                DW::Setting::CommunityJoinLinks
+                DW::Setting::CommunityGuidelinesLocation
+                DW::Setting::CommunityGuidelinesEntry
+            )],
+        }
     );
 
     LJ::Hooks::run_hook("settings_extra_cats", \@cats_order, \%cats_with_settings, user => $u);
@@ -181,6 +224,15 @@ body<=
                    !$cats_with_settings{$given_cat}->{disabled};
     } else {
         $given_cat = "display";
+    }
+
+    if ( $u && $u->user ne $authas ) {
+        # can only impersonate notification settings -
+        # if invisible or disabled, print this error
+        return LJ::bad_input( $ML{'error.invalidauth'} )
+            if $given_cat ne 'notifications';
+        # don't allow editing
+        $cats_with_settings{notifications}->{form} = 0;
     }
 
     my @settings = @{$cats_with_settings{$given_cat}->{settings}};
@@ -207,6 +259,10 @@ body<=
     if (LJ::did_post()) {
         return LJ::bad_input($ML{'error.invalidform'})
             unless LJ::check_form_auth();
+
+        # can't make changes while impersonating
+        return LJ::bad_input( $ML{'error.invalidauth'} )
+            if $u && $u->user ne $authas;
 
         if ( $given_cat eq "notifications" && $POST{deleteinactive} ) {
             $u->delete_all_inactive_subscriptions;
@@ -358,7 +414,7 @@ body<=
         }
     }
 
-    if ($given_cat eq "notifications") {
+    if ( $given_cat eq "notifications" && $u->user eq $authas ) {
         # look for deletions from GET
         my $deleted_subs = 0;
         foreach my $subscr ($u->subscriptions) {
@@ -378,7 +434,7 @@ body<=
 
     my ($getextra, $getsep) = ("", "?");
     $title = $windowtitle = $ML{'.title.self'};
-    if ($u && $authas ne $remote->user) {
+    if ( $u && $u->user ne $remote->user ) {
         $getextra = "?authas=$authas";
         $getsep = "&";
         $title = BML::ml('.title.comm', { user => $u->ljuser_display });
@@ -425,31 +481,53 @@ body<=
     $ret .= $cats_with_settings{$given_cat}->{desc};
     $ret .= "</p></div>";
 
+    $ret .= "<div class='settings_content'>";
+    $ret .= "<div class='$given_cat'>";
+
+    if ( $given_cat eq "notifications" && $can_view_other ) {
+        # form for viewing another user's notifications
+        # must go above the post form declaration
+        $ret .= "<div id='settings_save' class='action-bar'>";
+        $ret .= "<form action='$LJ::SITEROOT/manage/settings/' method='get'>";
+        $ret .= LJ::html_hidden( authas => $GET{authas} );
+        $ret .= LJ::html_hidden( cat => $given_cat );
+        $ret .= "<label for='user'>$ML{'.user'}</label>";
+        $ret .= "<input name='user' id='user' value='$GET{user}' maxlength='25' size='15'/>";
+        $ret .= "<input type='submit' value='$ML{'.user.submit'}'>";
+        $ret .= "</form>";
+        $ret .= "</div>";
+    }
+
     if ($cats_with_settings{$given_cat}->{form}) {
-        my $confirm_msg = LJ::ejs($ML{'.form.confirm1'});
-        $ret .= "<script>Settings.confirm_msg = \"$confirm_msg\";</script>";
+        if ( $LJ::ACTIVE_RES_GROUP ne "jquery"  ) {
+            my $confirm_msg = LJ::ejs($ML{'.form.confirm1'});
+            $ret .= "<script>Settings.confirm_msg = \"$confirm_msg\";</script>";
+        }
         $ret .= "<form class='table-form' id='settings_form' action='$LJ::SITEROOT/manage/settings/$getextra${getsep}cat=$given_cat' method='post'>";
         $ret .= LJ::form_auth();
     }
-    $ret .= "<div class='settings_content'>";
-    $ret .= "<div class='$given_cat'>";
 
     if ($given_cat eq "notifications") {
 
         LJ::set_active_resource_group( 'jquery' );
-        LJ::need_res( { group => 'jquery' }, 'js/notifications.js' );
+        LJ::need_res( { group => 'jquery' }, 'js/notifications.js',
+            "js/components/jquery.select-all-special.js",
+            "stc/css/components/select-all.css"  );
 
-        $ret .= "<div id='settings_save' class='action-bar'>";
-        $ret .= $cats_with_settings{$given_cat}->{form} ? LJ::html_submit($ML{'.btn.save'}) : "&nbsp;";
-        $ret .= "&nbsp;";
-        my $del_conf = LJ::ejs( $ML{'.confirm.deleteinactive2'} );
-        $ret .= LJ::html_submit( 'deleteinactive', $ML{'.btn.deleteinactive2'},
-                                 {
-                                   class => 'btn',
-                                   title => $ML{'.btn.deleteinactive2'},
-                                   onClick => "return confirm( '$del_conf' )"
-                                 } );
-        $ret .= "</div>";
+        # don't reprint the save buttons here if we displayed the admin form
+        if ( ! $can_view_other ) {
+            $ret .= "<div id='settings_save' class='action-bar'>";
+            $ret .= $cats_with_settings{$given_cat}->{form} ? LJ::html_submit($ML{'.btn.save'}) : "&nbsp;";
+            $ret .= "&nbsp;";
+            my $del_conf = LJ::ejs( $ML{'.confirm.deleteinactive2'} );
+            $ret .= LJ::html_submit( 'deleteinactive', $ML{'.btn.deleteinactive2'},
+                                     {
+                                       class => 'btn',
+                                       title => $ML{'.btn.deleteinactive2'},
+                                       onClick => "return confirm( '$del_conf' )"
+                                     } );
+            $ret .= "</div>";
+        }
 
         my $my_account_extra = LJ::Hooks::run_hook('subscriptions_manage_my_account_extra', $u);
 
@@ -485,6 +563,9 @@ body<=
             $_->commit foreach @default_subscriptions;
         }
 
+        # Translate legacy pre-ESN notifs to ESN notifs
+        LJ::Event::JournalNewComment::Reply->migrate_user( $u );
+
         my @categories = (
             {
                 "My Account" => [
@@ -495,8 +576,21 @@ body<=
                         event => 'JournalNewComment',
                         journal => $u,
                     ),
-                    "LJ::Setting::CommentEmailNotify",
-                    "LJ::Setting::SelfCommentEmail",
+
+                    LJ::Subscription::Pending->new($u,
+                        event => 'JournalNewComment::Reply',
+                        arg2 => 0,
+                    ),
+                    LJ::Subscription::Pending->new($u,
+                        event => 'JournalNewComment::Reply',
+                        arg2 => 1,
+                    ),
+
+                    LJ::Subscription::Pending->new($u,
+                        event => 'JournalNewComment::Reply',
+                        arg2 => 2,
+                    ),
+
                     LJ::Subscription::Pending->new($u,
                         event => 'PollVote',
                         journal => $u,
@@ -513,6 +607,11 @@ body<=
                         default_selected => 1,
                     ),
                     LJ::Subscription::Pending->new($u,
+                        event => 'VgiftDelivered',
+                        journal => $u,
+                        default_selected => 1,
+                    ),
+                    LJ::Subscription::Pending->new($u,
                         event => 'UserMessageRecvd',
                         journal => $u,
                         default_selected => 1,
@@ -524,6 +623,7 @@ body<=
                     'InvitedFriendJoins',
                     'CommunityInvite',
                     'CommunityJoinRequest',
+                    'CommunityModeratedEntryNew',
                     LJ::Subscription::Pending->new($u,
                         event => 'NewUserpic',
                     ),
@@ -543,12 +643,16 @@ body<=
             categories    => \@categories,
             showtracking  => 1,
             settings_page => 1,
+            num_per_page  => 250,
+            page          => int( $GET{page} || 0 ),
         ) . "<br />";
 
     } else {
-        my $setting_ct = 1;
+        my $setting_ct = 0;
         $ret .= "<table summary=''>";
         foreach my $setting (@settings) {
+            $setting_ct++ unless $setting->is_conditional_setting;
+
             my $errors = $setting->errors_from_save($save_rv);
             my $args = $setting->args_from_save($save_rv);
 
@@ -559,14 +663,13 @@ body<=
             my $last_class = $setting_ct == scalar @settings ? " last" : "";
 
             my $row_class = $setting_ct % 2 == 0 ? "even" : "odd";
-            $ret .= "<tr class='$row_class'>";
+            my $setting_id = $setting->pkgkey;
+            $ret .= "<tr class='$row_class' id='$setting_id'>";
             $ret .= "<th class='${given_cat}_label$last_class'>$label</th>" if $label;
             $ret .= "<td class='${given_cat}_option$last_class'>" . ($option ? $option : "&nbsp;") . "</td>";
             $ret .= "<td class='${given_cat}_actionlink$last_class'>" . ($actionlink ? $actionlink : "&nbsp;") . "</td>";
             $ret .= "<td class='help$last_class'>" . ($helpicon ? $helpicon : "&nbsp;") . "</td>";
             $ret .= "</tr>";
-
-            $setting_ct++;
         }
         $ret .= "</table>";
 
@@ -585,7 +688,7 @@ body<=
 
     $ret .= "<div id='settings_save' class='action-bar'>";
     $ret .= $cats_with_settings{$given_cat}->{form} ? LJ::html_submit($ML{'.btn.save'}) : "&nbsp;";
-    if ( $given_cat eq "notifications" ) {
+    if ( $given_cat eq "notifications" && $u->user eq $authas ) {
         $ret .= "&nbsp;";
         my $del_conf = LJ::ejs( $ML{'.confirm.deleteinactive2'} );
         $ret .= LJ::html_submit( 'deleteinactive', $ML{'.btn.deleteinactive2'}, {

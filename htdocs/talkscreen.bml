@@ -19,6 +19,7 @@ _info?><?_code
     use strict;
     use vars qw(%GET %POST);
     use vars qw($body);
+    use LJ::JSON;
 
     my $jsmode = !!$GET{jsmode};
     $body = "";
@@ -32,7 +33,7 @@ _info?><?_code
             BML::finish();
             # FIXME: remove once we've switched over completely to jquery
             if ( !!$GET{json} ) {
-                return JSON::objToJson( { error => $_[0] } );
+                return to_json( { error => $_[0] } );
             } else {
                 return "alert('" . LJ::ejs($_[0]) . "'); 0;";
             }
@@ -53,8 +54,6 @@ _info?><?_code
     my $dtalkid = $qtalkid;   # display talkid, for use in URL later
 
     my $jsres = sub {
-        use JSON;
-
         my ( $mode, $message ) = @_;
 
         # flip case of 'un'
@@ -83,7 +82,7 @@ _info?><?_code
         sleep 1 if $LJ::IS_DEV_SERVER;
 
         BML::finish();
-        return JSON::objToJson( \%ret );
+        return to_json( \%ret );
     };
 
     my $remote = LJ::get_remote();
@@ -129,17 +128,14 @@ _info?><?_code
 
     my $qitemid = $post->{'itemid'}+0;
 
-    # $posterid is the userid of the author of the entry, not the comment
-    my ($posterid, $anum) =
-        $dbcr->selectrow_array("SELECT posterid, anum FROM log2 WHERE ".
-                               "journalid=$u->{'userid'} AND jitemid=$qitemid");
-    my $up = LJ::load_userid($posterid);
+    my $e = LJ::Entry->new( $u, jitemid => $qitemid );
 
-    my $ditemid = $qitemid*256 + $anum;
+    my $up = $e->poster;
 
-    my $itemlink = $u->journal_base . "/$ditemid.html";
+    my $itemlink = $e->url;
     my $linktext = BML::ml( '.link', { aopts => "href='$itemlink'" } );
-    my $commentlink = "$itemlink?view=$dtalkid" . LJ::Talk::comment_anchor( $dtalkid );
+
+    my $commentlink = LJ::Talk::talkargs( $itemlink, "view=" . $talkid, "", "" ) . LJ::Talk::comment_anchor( $talkid );
 
     if ($mode eq 'screen') {
         my $can_screen = LJ::Talk::can_screen($remote, $u, $up, $post->{'userpost'});
@@ -147,7 +143,8 @@ _info?><?_code
         if ($POST{'confirm'} eq 'Y') {
             return $error->( $ML{'error.invalidform'} ) unless LJ::check_form_auth();
         } else {
-            $body .= "<?h1 $ML{'.screen.sure.title'} h1?><?p $ML{'.screen.sure.body'} p?>";
+            $body .= "<?h1 $ML{'.screen.sure.title'} h1?>";
+            $body .= "<p>" . BML::ml('.screen.sure.body', { aopts => "href='$commentlink'" }) . "</p>";
             $body .= "<p><form method='POST' action='talkscreen'><center>\n";
             $body .= LJ::form_auth();
             $body .= LJ::html_hidden(mode => 'screen', 'talkid' => $talkid,
@@ -172,7 +169,8 @@ _info?><?_code
         if ($POST{'confirm'} eq 'Y') {
             return $error->( $ML{'error.invalidform'} ) unless LJ::check_form_auth();
         } else {
-            $body .= "<?h1 $ML{'.unscreen.sure.title'} h1?><?p $ML{'.unscreen.sure.body'} p?>";
+            $body .= "<?h1 $ML{'.unscreen.sure.title'} h1?>";
+            $body .= "<p>" . BML::ml('.unscreen.sure.body', { aopts => "href='$commentlink'" }) . "</p>";
             $body .= "<p><form method='POST' action='talkscreen'><center>\n";
             $body .= LJ::form_auth();
             $body .= LJ::html_hidden(mode => 'unscreen', 'talkid' => $talkid,
@@ -201,7 +199,8 @@ _info?><?_code
         if ($POST{confirm} eq 'Y') {
             return $error->( $ML{'error.invalidform'} ) unless LJ::check_form_auth();
         } else {
-            $body .= "<?h1 $ML{'.freeze.sure.title'} h1?><?p $ML{'.freeze.sure.body'} p?>";
+            $body .= "<?h1 $ML{'.freeze.sure.title'} h1?>";
+            $body .= "<p>" . BML::ml('.freeze.sure.body', { aopts => "href='$commentlink'" }) . "</p>";
             $body .= "<p><form method='post' action='talkscreen'><center>\n";
             $body .= LJ::form_auth();
             $body .= LJ::html_hidden(mode => 'freeze', 'talkid' => $talkid,
@@ -228,7 +227,8 @@ _info?><?_code
         if ($POST{confirm} eq 'Y') {
             return $error->( $ML{'error.invalidform'} ) unless LJ::check_form_auth();
         } else {
-            $body .= "<?h1 $ML{'.unfreeze.sure.title'} h1?><?p $ML{'.unfreeze.sure.body'} p?>";
+            $body .= "<?h1 $ML{'.unfreeze.sure.title'} h1?>";
+            $body .= "<p>" . BML::ml('.unfreeze.sure.body', { aopts => "href='$commentlink'" }) . "</p>";
             $body .= "<p><form method='post' action='talkscreen'><center>\n";
             $body .= LJ::form_auth();
             $body .= LJ::html_hidden(mode => 'unfreeze', 'talkid' => $talkid,

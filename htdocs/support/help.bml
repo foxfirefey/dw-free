@@ -60,11 +60,8 @@ body<=
  use vars qw(%FORM);
  LJ::need_res( 'stc/support.css' );
 
- LJ::set_active_crumb('supporthelp');
-
  my ($ret, $sth);
  my $dbr = LJ::get_db_reader();
- my $r = BML::get_request();
 
  my $remote = LJ::get_remote();
  LJ::Support::init_remote($remote);
@@ -112,7 +109,7 @@ body<=
          $sth = $dbr->prepare("SELECT s.*, SUBSTRING(sl.message, 1, 200) AS 'message' " .
                               "FROM support s, supportlog sl " .
                               "WHERE s.state='closed' AND s.spid = sl.spid AND sl.type = 'req' " .
-                              "AND s.timeclosed > (UNIX_TIMESTAMP() - (3600*24)) " .
+                              "AND s.timeclosed > (UNIX_TIMESTAMP() - (3600*168)) " .
                               "AND s.spcatid = ?");
      } else { # triggers on green, open
          $sth = $dbr->prepare("SELECT s.*, SUBSTRING(sl.message, 1, 200) AS 'message' " .
@@ -160,11 +157,11 @@ body<=
      my $dbr = LJ::get_db_reader();
      if ($state eq "closed") {
          $sth = $dbr->prepare("SELECT s.* FROM support s WHERE s.state='closed' AND " .
-                              "s.timeclosed>UNIX_TIMESTAMP()-(3600*24) $filterwhere");
+                              "s.timeclosed>UNIX_TIMESTAMP()-(3600*168) $filterwhere");
      } elsif ($state eq "youreplied") {
          $sth = $dbr->prepare("SELECT s.* FROM support s, support_youreplied yr " .
                               "WHERE yr.userid=$remote->{'userid'} AND s.spid=yr.spid $filterwhere " .
-                              "AND (s.state='open' OR (s.state='closed' AND s.timeclosed>UNIX_TIMESTAMP()-(3600*24)))");
+                              "AND (s.state='open' OR (s.state='closed' AND s.timeclosed>UNIX_TIMESTAMP()-(3600*168)))");
      } else { # triggers on green, open
          $sth = $dbr->prepare("SELECT s.* FROM support s WHERE s.state='open' $filterwhere");
      }
@@ -298,20 +295,22 @@ body<=
      LJ::Support::fill_request_with_cat($sp, $cats);
      next unless (LJ::Support::can_read($sp, $remote));
 
-     my $status = "open";
-     my $barbg = "green";
-     if ($sp->{'timeclosed'}) {
-         $status = "closed";
+     my $status = $sp->{'state'} eq "closed" ? "closed" :
+                  LJ::Support::open_request_status($sp->{'timetouched'},
+                                                   $sp->{'timelasthelp'});
+     my $barbg;
+     if ($status eq "open") {
+         $barbg = "green";
+     } elsif ($status eq "closed") {
          $barbg = "red";
-     }
-     elsif ($sp->{'timelasthelp'} > $sp->{'timetouched'}+5) {
-         $status = "answered<br />awaiting close";
+     } elsif ($status eq "awaiting close") {
+         $status = "answered<br/>awaiting close";
          $barbg = "yellow";
-     }
-     elsif ($sp->{'timelasthelp'} && $sp->{'timetouched'} > $sp->{'timelasthelp'}+5) {
-         $status = "answered<br /><b>still needs help</b>";
+     } elsif ($status eq "still needs help") {
+         $status = "answered<br/><strong>still needs help</strong>";
          $barbg = "green";
      }
+
      my $original_barbg = $barbg;
      $barbg = 'clicked' if ( $GET{closeall} && $original_barbg eq 'yellow' )
                         || $marked{$sp->{spid}};

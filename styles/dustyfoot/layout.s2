@@ -1,0 +1,961 @@
+layerinfo type = "layout";
+layerinfo name = "Dusty Foot";
+layerinfo redist_uniq = "dustyfoot/layout";
+layerinfo author_name = "timeasmymeasure";
+layerinfo author_email = "timeasmymeasure@gmail.com";
+layerinfo lang = "en";
+
+set layout_authors = [ {"name" => "timeasmymeasure", "type" => "user"} ];
+
+##===============================
+## Presentation
+##===============================
+
+set layout_type = "two-columns-right";
+set comment_userpic_style = "small";
+set userpics_position = "right";
+set entry_management_links = "text";
+set comment_management_links = "text";
+set custom_control_strip_colors = "on_no_gradient";
+
+##===============================
+## Colors
+##===============================
+
+propgroup colors_child {
+    property Color color_entry_date { des = "Entry/Comment date color"; }
+    property use color_header_link;
+    property use color_header_link_active;
+    property use color_header_link_visited;
+    property use color_header_link_hover;
+}
+
+##===============================
+## Modules
+##===============================
+
+property string module_navlinks_section_override {
+    values = "none|(none)|header|Header|one|Main Module Section|two|Secondary Module Section";
+    grouped = 1;
+    }
+
+set grouped_property_override = { "module_navlinks_section" => "module_navlinks_section_override" };
+set module_navlinks_section = "header";
+
+##===============================
+## Fonts
+##===============================
+
+set font_base = "Arial";
+set font_fallback = "sans-serif";
+set font_base_size = "1";
+set font_base_units = "em";
+set font_journal_title_size = "1.667";
+set font_journal_title_units = "em";
+set font_entry_title_size = "1.334";
+set font_entry_title_units = "em";
+set font_comment_title_size = "1.334";
+set font_comment_title_units = "em";
+set font_module_heading_size = "1.167";
+set font_module_heading_units = "em";
+
+##===============================
+## Layout
+##===============================
+
+function print_module_navlinks( bool apply_class_to_link ) {
+    var Page p = get_page();
+    var string title = ($*module_navlinks_section == "header") or (($*layout_type == "two-columns-left" or $*layout_type == "two-columns-right") and $*module_navlinks_section == "two") ? "" : "Navigation";
+    open_module("navlinks", $title, "");
+
+      var string{}[] links = [];
+
+      foreach var string k ($p.views_order) {
+          var string class = "list-item-$k";
+          var string css = "";
+
+          if ($apply_class_to_link ) {
+            var string css = """ class="$k" """;
+            if ($p.view == $k) { $css = """ class="current $k" """; }
+          } else {
+            $class = "$k " + $class;
+            if ($p.view == $k) { $class = "current " + $class; }
+          }
+          
+          $links[size $links] = { "class" => $class, "item" => """<a href="$p.view_url{$k}"$css>"""+lang_viewname($k)+"""</a>""" };
+      }
+    print_module_list($links);
+
+    close_module();
+}
+
+function print_module_calendar() {
+    var Page p = get_page();
+    var YearMonth mon = $p->get_latest_month();
+
+    if ($*module_calendar_opts_type=="horizontal") {
+        var string title = (($*layout_type == "two-columns-left" or $*layout_type == "two-columns-right") and $*module_calendar_section == "two") ? "" : "Calendar";
+        open_module("calendar calendar-horizontal","$title", "");
+        print $mon->month_format("%%month%%", true);
+        foreach var YearWeek week ($mon.weeks) {
+            foreach var YearDay day ($week.days) {
+                if ($day.num_entries > 0) {
+                    var string entries = get_plural_phrase($day.num_entries, "text_calendar_num_entries");
+                    print """<span class="entry-day"> <a href="$day.url" title="$entries">$day.day</a></span>""";
+                }
+                else {
+                    print """<span class="empty-day"> $day.day </span>""";
+                }
+            }
+        }
+        print $mon->month_format("%%yyyy%%", true);
+        close_module();
+    }
+    else {
+        open_module("calendar", $mon->month_format("", true), "");
+        println """<table summary="Monthly calendar with links to each day's entries">""";
+
+        println "<tr>";
+        foreach var int d (weekdays()) {
+            "<th>"+$*lang_dayname_shorter[$d]+"</th>\n";
+        }
+       println "</tr>";
+
+        foreach var YearWeek week ($mon.weeks) {
+            println "<tr>";
+            foreach var int i (1 .. $week.pre_empty) {
+                print "<td>&nbsp;</td>";
+            }
+
+            foreach var YearDay day ($week.days) {
+                if ( $day.num_entries > 0) {
+                    var string entries = get_plural_phrase($day.num_entries, "text_calendar_num_entries");
+                    print """<td class="entry-day"> <a href="$day.url" title="$entries">$day.day</a></td>""";
+                }
+                else {
+                    print """<td class="empty-day">$day.day</td>""";
+                }
+            }
+
+            foreach var int i (1 .. $week.post_empty) {
+                print "<td>&nbsp;</td>";
+            }
+            println "</tr>";
+        }
+
+        println """</table>""";
+        close_module();
+    }
+}
+
+function Page::print() {
+    """<!DOCTYPE html>\n<html lang="en">\n<head profile="http://www.w3.org/2006/03/hcard http://purl.org/uF/hAtom/0.1/ http://gmpg.org/xfn/11">\n""";
+    $this->print_meta_tags();
+    $this->print_head();
+    $this->print_stylesheets();
+    $this->print_head_title();
+    """</head>""";
+    $this->print_wrapper_start();
+    $this->print_control_strip();
+    """
+    <div id="canvas">
+        <div class="inner">
+            <div id="header">
+                <div class="inner">
+                    """;
+                    $this->print_header();
+                    $this->print_module_section("header");
+    """
+                </div><!-- end header>inner -->
+            </div><!-- end header -->
+            <div id="content">
+                <div class="inner">
+    """;
+                if ($*layout_type == "one-column-split") {
+    """
+                    <div id="secondary"><div class="inner">
+    """;
+                        $this->print_module_section("one");
+    """
+                    </div></div><!--  end secondary and secondary>inner -->
+    """;
+                }
+    """
+                    <div id="primary"><div class="inner">
+                        """;
+                        $this->print_body();
+    """
+                    </div></div><!-- end primary and primary>inner -->
+    """;
+                if ($*layout_type != "one-column-split") {
+    """
+                    <div id="secondary"><div class="inner">
+    """;
+                        $this->print_module_section("one");
+    """
+                    </div></div><!--  end secondary and secondary>inner -->
+    """;
+                }
+    """
+                    <div id="invisible-separator" style="float: left; width: 1px;"></div> <!-- this is a hack for IE7 + two-columns-right -->
+                    <div id="tertiary"><div class="inner">
+                        """;
+                        $this->print_module_section("two");
+    """
+                    </div></div><!-- end tertiary and tertiary>inner -->
+                    <div id="content-footer"></div>
+                </div><!-- end content>inner -->
+            </div> <!-- end content -->
+        </div> <!-- end canvas>inner -->
+    """;
+
+    """
+    <div id="footer">
+        <div class="inner">
+            """;
+            print safe """
+                <div class="page-top"><a href="#">$*text_page_top</a></div>
+        </div><!-- end footer>inner -->
+    </div><!-- end footer -->
+
+    </div> <!-- end canvas -->
+    """;
+    $this->print_wrapper_end();
+    """</html>""";
+}
+
+##===============================
+## Stylesheet
+##===============================
+
+function print_stylesheet () {
+    var string medium_media_query = generate_medium_media_query();
+
+    var string entry_header_margin = "";
+    if ( $*entry_userpic_style == "" ) { $entry_header_margin = "130px"; }
+    elseif ( $*entry_userpic_style == "small" ) { $entry_header_margin = "105px"; }
+    elseif ( $*entry_userpic_style == "smaller" ) { $entry_header_margin = "80px"; }
+
+    var string comment_header_margin = "";
+    if ( $*comment_userpic_style == "" ) { $comment_header_margin = "130px"; }
+    elseif ( $*comment_userpic_style == "small" ) { $comment_header_margin = "105px"; }
+    elseif ( $*comment_userpic_style == "smaller" ) { $comment_header_margin = "80px"; }
+
+    var string userpic_css = "";
+    if($*userpics_position == "left") {
+        $userpic_css = """
+        .has-userpic .entry .header {
+           margin-left: $entry_header_margin;
+           }
+        .has-userpic .comment .header {
+           margin-left: $comment_header_margin;
+           }
+        .has-userpic .entry .userpic,
+        .has-userpic .comment .userpic {
+           float: left;
+           margin-left: 10px;
+           margin-right: 10px;
+           }
+        """;
+    }
+    elseif($*userpics_position == "right") {
+        $userpic_css = """
+        .has-userpic .entry .header {
+           margin-right: $entry_header_margin;
+           }
+        .has-userpic .comment .header {
+           margin-right: $comment_header_margin;
+           }
+        .has-userpic .entry .userpic,
+        .has-userpic .comment .userpic {
+           float: right;
+           margin-left: 10px;
+           margin-right: 10px;
+           }
+        """;
+    }
+"""
+
+/* Dusty Foot */
+/* by timeasmymeasure*/
+
+/* Main
+***************************************************************************/
+
+* {
+    margin: 0;
+    padding: 0;
+    }
+
+body {
+    line-height: 140%;
+    margin: 0;
+    }
+
+a, a:link, a:visited {
+    text-decoration: none;
+    }
+
+img {
+    border: none;
+    }
+
+p {
+    margin: 1em 0;
+    }
+
+blockquote {
+    background: $*color_module_background;
+    color: $*color_module_text;
+    border-left: 15px solid $*color_entry_border;
+    margin: 15px 15px 15px 50px;
+    padding: 10px;
+    width: 65%;
+    }
+
+code, kbd, pre, tt, textarea {
+    font-family: monospace;
+    }
+
+ul {
+    list-style-type: disc;
+    margin-left: 50px;
+    }
+
+ol {
+    list-style-type: decimal-leading-zero;
+    margin-left: 50px;
+    }
+
+/* Page Containers
+***************************************************************************/
+
+#canvas {
+    margin: 0 auto;
+    width: 87%;
+    }
+
+#content {
+    background-color: $*color_entry_background;
+    color: $*color_entry_text;
+    }
+
+#content a { color: $*color_entry_link; }
+#content a:visited { color: $*color_entry_link_visited; }
+#content a:hover { color: $*color_entry_link_hover; }
+#content a:active { color: $*color_entry_link_active; }
+
+#primary > .inner:first-child {
+    padding: 0;
+    }
+
+#secondary,
+.any-column #tertiary {
+    background-color: $*color_module_background;
+    color: $*color_module_text;
+    }
+
+@media $medium_media_query {
+     .two-columns #tertiary {
+        background-color: transparent;
+     }
+ }
+
+#secondary > .inner:first-child,
+#tertiary > .inner:first-child {
+    padding: 0;
+    }
+
+/* Header
+***************************************************************************/
+
+h1#title {
+    margin: 0;
+    padding: 10px 0 0 10px;
+    text-transform: uppercase;
+    }
+
+h2#subtitle {
+    margin: 0;
+    padding: 0 0 0 10px;
+    text-transform: lowercase;
+    }
+
+h2#pagetitle {
+    margin: 0;
+    padding: 10px;
+    font-variant: small-caps;
+    font-weight: lighter;
+    }
+
+#header .module-navlinks {
+    background: $*color_header_background;
+    text-align: right;
+    text-transform: uppercase;
+    }
+
+#header .module-navlinks ul {
+    margin: 0;
+    padding: 0;
+    }
+
+#header .module-navlinks li {
+    display: inline;
+    padding: 10px;
+    }
+
+#header h1#title a { color: $*color_page_title; }
+#header .module-navlinks li a { color: $*color_header_link; }
+#header .module-navlinks li a:visited { color: $*color_header_link_visited ; }
+#header h1#title a:hover, #header .module-navlinks li a:hover {
+    color: $*color_header_link_hover; }
+#header h1#title a:active, #header .module-navlinks li a:active {
+    color: $*color_header_link_active; }
+
+/* Navigation
+***************************************************************************/
+
+.navigation {
+    margin: 0;
+    font-size: .9em;
+    padding: 10px;
+    text-align: left;
+    text-transform: uppercase;
+    }
+
+.navigation li {
+    padding: 5px;
+    }
+
+.navigation .page-back a:before,
+.navigation .page-forward a:after {
+    vertical-align: 40%;
+    }
+
+/* Entries and Comments
+***************************************************************************/
+
+.entry,
+.text_noentries_day {
+    border: none;
+    border-bottom: 5px solid $*color_entry_border;
+    margin: 0 10px 20px;
+    padding: 10px 0;
+    }
+
+.text_noentries_day {
+    margin-bottom: 20px;
+    margin-top: 20px;
+    }
+
+.entry-content {
+    margin: 0 0 1em;
+    }
+
+.entry-title {
+    font-variant: small-caps;
+    margin: 0;
+    padding: 0;
+    }
+
+/* Restore colors overridden by #content */
+#content .entry .entry-title,
+#content .entry .entry-title a {
+    color: $*color_entry_title;
+    }
+
+.datetime {
+    font-size: .8em;
+    color: $*color_entry_date;
+    text-transform: uppercase;
+    }
+
+#content .datetime a {
+    color: $*color_entry_date;
+    }
+
+.day-date { padding: 0 0 0 .5em; }
+
+.entry-poster {
+    border-bottom: 1px solid $*color_entry_border;
+    display: block;
+    margin-bottom: 10px;
+    }
+
+.has-userpic .entry .userpic {
+    margin-top: -1.5em;
+    }
+
+.entry .userpic img {
+    border: 5px solid $*color_header_background;
+    }
+
+.entry .metadata.bottom-metadata {
+    clear: both;
+    }
+
+.entry .footer {
+    clear: both;
+    text-align: center;
+    text-transform: uppercase;
+    }
+
+.entry-management-links, .entry-interaction-links,
+.comment-management-links, .comment-interaction-links {
+    display: inline;
+    text-align: right;
+    }
+
+.entry-management-links li, .entry-interaction-links li,
+.comment-management-links li, .comment-interaction-links li {
+    padding: 5px;
+    }
+
+#content .entry-management-links.text-links li a,
+#content .entry-interaction-links li a,
+#content .comment-management-links.text-links li a,
+#content .comment-interaction-links li a {
+    color: $*color_entry_interaction_links;
+    }
+
+.entry-management-links.text-links li a,
+.comment-management-links.text-links li a,
+.comment-interaction-links.text-links .thread a {
+    background-image: url($*STYLES_IMGDIR/transmogrified/permalink.gif);
+    background-repeat: no-repeat;
+    background-position: 0% 50%;
+    padding-left: 14px;
+    }
+
+.entry-management-links.text-links .edit_entry a,
+.comment-management-links.text-links .delete_comment a,
+.comment-management-links.text-links .edit_comment a {
+    background-image: url($*STYLES_IMGDIR/transmogrified/edit.gif);
+    }
+
+.entry-management-links.text-links .edit_tags a,
+.comment-interaction-links .parent a {
+    background-image: url($*STYLES_IMGDIR/transmogrified/tag.gif);
+    }
+
+.entry-management-links.text-links .mem_add a,
+.entry-management-links.text-links .watch_comments a,
+.comment-management-links.text-links .watch_thread a {
+    background-image: url($*STYLES_IMGDIR/transmogrified/memories.gif);
+    }
+
+.entry-management-links.text-links .link_prev a {
+    background-image: url($*STYLES_IMGDIR/transmogrified/previous.gif);
+    }
+
+.entry-management-links.text-links .link_next a {
+    background-image: url($*STYLES_IMGDIR/transmogrified/next.gif);
+    }
+
+.entry-interaction-links li a,
+.comment-interaction-links li a,
+.entry-management-links.text-links .tell_friend a {
+    background-image: url($*STYLES_IMGDIR/transmogrified/comment.gif);
+    background-repeat: no-repeat;
+    background-position: 0% 50%;
+    display: inline;
+    padding-left: 14px;
+    }
+
+.comment-management-links.text-links .delete_comment a {
+    background-image: url($*STYLES_IMGDIR/transmogrified/delete.gif);
+    }
+
+.text_noentries_day {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    }
+
+.tag {
+    border-bottom: 1px solid $*color_entry_border;
+    font-size: .8em;
+    margin: 1em 0 1em .5em;
+    text-align: left;
+    }
+
+.metadata {
+    line-height: 100%;
+    font-size: .8em;
+    padding: 5px;
+    text-align: left;
+    text-transform: uppercase;
+    }
+
+.metadata.bottom-metadata {
+    border-top: 1px solid $*color_entry_border;
+    margin-top: 1em;
+    }
+
+.metadata.top-metadata {
+    border-bottom: 1px solid $*color_entry_border;
+    }
+
+.metadata .metadata-item,
+#content .metadata a, #content .tag a {
+    background-color: $*color_entry_title_background;
+    color: $*color_entry_title;
+    }
+
+.footer li,
+.entry .metadata li,
+.tag li {
+    margin-left: 0 !important;
+    }
+
+/* Comments
+***************************************************************************/
+
+.comment-wrapper .comment {
+    border-bottom: 5px solid $*color_entry_border;
+    margin-bottom: 20px;
+    margin-right: 10px;
+    padding: 10px;
+    background-color: $*color_entry_background;
+    }
+
+#content .comment-wrapper .comment-title,
+#content .comment-wrapper .comment-title a {
+    color: $*color_comment_title;
+    font-variant: small-caps;
+    letter-spacing: .1em;
+    }
+
+.has-userpic .comment .userpic {
+    margin-top: -1em;
+    }
+
+.comment .userpic img {
+    border: 5px solid $*color_header_background;
+    }
+
+.comment-poster {
+    border-bottom: 1px solid $*color_entry_border;
+    display: block;
+    margin-bottom: 10px;
+    }
+
+.comment .footer {
+    margin-top: 15px;
+    text-align: center;
+    text-transform:uppercase;
+    }
+
+.page-reply .entry-wrapper {
+    margin-top: 20px;
+    }
+
+#postform {
+    border: 1px solid $*color_entry_border;
+    margin: 20px;
+    }
+
+#commenttext {
+    width: 80%;
+    }
+
+.poster-ip {
+    color: $*color_entry_date;
+    text-transform: uppercase;
+    }
+
+.comment-pages {
+    padding: 5px;
+    }
+
+/* Archive Pages
+***************************************************************************/
+
+.month-wrapper,
+#archive-month dl {
+    border: 1px solid $*color_entry_border;
+    margin: 20px;
+    padding: 10px;
+    }
+
+.month-wrapper h3 {
+    color: $*color_entry_title;
+    font-variant: small-caps;
+    }
+
+.month table {
+    margin: auto;
+    width: 90%;
+    }
+
+.month table th {
+    border: 1px solid $*color_entry_border;
+    color: $*color_page_link;
+    padding: 5px;
+    text-align: center;
+    }
+
+.month table td {
+    border: 1px solid $*color_entry_border;
+    border: none;
+    }
+
+.month caption {
+    display: none;
+    }
+
+.month .day {
+    border: 1px solid $*color_entry_border;
+    padding: 5px;
+    }
+
+.day-has-entries {
+    background-color: $*color_module_background;
+    color: $*color_module_text;
+    padding: 2px;
+    }
+
+#content .day-has-entries a {
+    color: $*color_module_link;
+    }
+
+#content .day-has-entries a:visited {
+    color: $*color_module_link_visited;
+    }
+
+#content .day-has-entries a:hover {
+    color: $*color_module_link_hover;
+    }
+
+#content .day-has-entries a:active {
+    color: $*color_module_link_active;
+    }
+
+.day-empty {
+    border: 1px solid $*color_entry_border;
+    }
+
+.month .day-has-entries a {
+    font-size: 1.25em;
+    font-weight: bold;
+    }
+
+.day-has-entries p {
+    margin: 3px !important;
+    text-align: right;
+    }
+
+.month .footer {
+    margin: auto;
+    text-align: center;
+    width: 90%;
+    }
+
+#archive-month dt {
+    font-weight: bold;
+    }
+
+#archive-month .entry-title {
+    display: inline-block;
+    padding-left: 5px;
+    }
+
+/* Tags Page
+***************************************************************************/
+
+.page-tags .tags-container {
+    margin: 10px 10px 0 10px;
+    }
+
+.page-tags .tags-container h2 {
+    border-bottom: 1px solid $*color_entry_border;
+    color: $*color_entry_title;
+    font-variant: small-caps;
+    margin-bottom: 10px;
+    }
+
+.page-tags .tags-container ul li {
+    list-style: disc;
+    margin-left: 50px;
+    padding: 5px;
+    }
+
+/* Icons Page
+***************************************************************************/
+
+.icons-container {
+    margin: 10px 10px 0 10px;
+    }
+
+.icons-container h2 {
+    border-bottom: 1px solid $*color_entry_border;
+    color: $*color_entry_title;
+    font-variant: small-caps;
+    margin-bottom: 10px;
+    }
+
+.sorting-options ul {
+    padding-left: 0;
+    }
+
+.icons-container .icon {
+    margin: 1em 0;
+    }
+
+.icon-image {
+    float: left;
+    clear: left;
+    margin-bottom: .25em;
+    min-width: 100px;
+    padding-right: 1em;
+    }
+
+.icon-info {
+    min-height: 100px;
+    }
+
+.icon-info span {
+    font-weight: bold;
+    }
+
+.icon-info .default {
+    text-decoration: underline;
+    }
+
+/* Modules
+***************************************************************************/
+
+.module-header {
+    border-bottom: 1px solid $*color_header_background;
+    font-variant: small-caps;
+    }
+
+/* Restore colors overridden by #content */
+#content .module a { color: $*color_module_link; }
+#content .module a:visited { color: $*color_module_link_visited; }
+#content .module a:hover { color: $*color_module_link_hover; }
+#content .module a:active { color: $*color_module_link_active; }
+
+#content .module-header a {
+    color: $*color_module_title;
+    }
+
+.module-section-one ul,
+.module-section-two ul {
+    list-style: none;
+    margin: 0;
+    }
+
+.module-section-one li,
+.module-section-two li {
+    padding: 2px 0 0 5px;
+    text-transform: lowercase;
+    }
+
+.module-section-one .module,
+.module-section-two .module {
+    margin: 10px 10px 10px 20px;
+    }
+
+@media $medium_media_query {
+    .two-columns #tertiary .module-section-two .module-header,
+    .two-columns #tertiary .module-section-two .module-content {
+        margin: 10px 10px 10px 20px;
+        }
+}
+
+.module-userprofile .module-content {
+    text-align: center;
+    }
+
+.module-userprofile .userpic img {
+    border: 5px solid $*color_header_background;
+    text-align: center;
+    }
+
+.module-userprofile ul {
+    margin-top: 20px;
+    }
+
+.module-userprofile .icon-links li {
+    padding: 5px;
+    }
+
+.module-credit .module-content {
+    text-align: center;
+    }
+
+.module-calendar table {
+    font-size: .7em;
+    margin: auto;
+    text-align: center;
+    width: 100%;
+    }
+
+.empty-day {
+    padding: 5px;
+    }
+
+.entry-day {
+    background-color: $*color_header_background;
+    color: $*color_page_title;
+    padding: 5px;
+    }
+
+#content .entry-day a {
+    color: $*color_header_link;
+    text-decoration: none;
+    }
+
+#content .entry-day a:visited {
+    color: $*color_header_link_visited;
+    }
+
+#content .entry-day a:hover {
+    color: $*color_header_link_hover;
+    text-decoration: underline;
+    }
+
+#content .entry-day a:active {
+    color: $*color_header_link_active;
+    text-decoration: underline;
+    }
+
+/* Footer
+***************************************************************************/
+
+#footer {
+    text-align: center;
+    }
+
+/* Contextual Pop-ups
+***************************************************************************/
+
+.ContextualPopup {
+    background: $*color_entry_background;
+    border: 1px solid $*color_header_background !important;
+    border-radius: 0;
+    color: $*color_entry_text;
+    }
+
+div.ContextualPopup div.Inner a,
+div.ContextualPopup div.Inner a:visited {
+    text-decoration: none;
+    }
+
+.ContextualPopup a { color: $*color_entry_link; }
+.ContextualPopup a:visited { color: $*color_entry_link_visited; }
+.ContextualPopup a:hover { color: $*color_entry_link_hover; }
+.ContextualPopup a:active { color: $*color_entry_link_active; }
+
+.ContextualPopup .Userpic {
+    background: $*color_header_background;
+    margin:  5px;
+    padding: 5px;
+    }
+
+.ContextualPopup .Relation { text-transform: lowercase; }
+
+$userpic_css
+
+""";
+}

@@ -1,0 +1,24 @@
+@import "foundation/base";
+
+.queue {
+    list-style: none;
+    margin: 0;
+
+    .queue-item {
+        padding: ($base-line-height * 1em) 1.25rem;
+        margin-bottom: 4px;
+
+        .timestamp {
+            font-size: smaller;
+            text-align: right;
+        }
+
+        .queue-action {
+            display: block;
+        }
+    }
+
+    input {
+        margin-bottom: 0;
+    }
+}

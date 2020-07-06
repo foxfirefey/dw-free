@@ -56,7 +56,7 @@ _toggleSubscription: function(subInfo, type) {
         // get necessary AJAX parameters
         $.each(param_keys,(function (index,param) {
             if (Number(subInfo[param]))
-                params[param] = parseInt(subInfo[param]);
+                params[param] = parseInt(subInfo[param], 10);
         }));
     }
     params.action = action;
@@ -215,6 +215,9 @@ _create: function() {
         // don't show the popup if we want to open it in a new tab (ctrl+click or cmd+click)
         if (e.ctrlKey || e.metaKey) return;
 
+        // e.which == 1 is a left click. We don't want to handle anything else
+        if (e.which != 1) return;
+
         e.preventDefault();
         e.stopPropagation();
 
@@ -280,7 +283,6 @@ _create: function() {
                     document.location = $ele.attr("href");
                 }
             },
-            maxWidth: "80%",
             width: 500
         });
     });

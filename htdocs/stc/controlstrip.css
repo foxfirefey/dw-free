@@ -1,8 +1,7 @@
 html body
 {
-    padding-top: 45px;
-    margin-right: 0;
-    margin-left: 0;
+    padding-top: 0;
+    margin: 0;
 }
 
 #lj_controlstrip
@@ -10,35 +9,43 @@ html body
     top: 0;
     left: 0;
     width: 100%;
-    height: 45px;
     margin: 0;
     padding: 0;
-    position: absolute;
+    position: relative;
     background-repeat: repeat-x;
     background-position: bottom;
+    text-align: left;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: center;
 }
 
-#lj_controlstrip table
-{
-    margin: 0;
-    padding: 0;
-    width: auto;
-}
-
-#lj_controlstrip td
+#lj_controlstrip > div
 {
     font-family: Arial, sans-serif;
     font-size: 11px;
     line-height: 16.5px;
     letter-spacing: normal;
+    padding: 5px 10px;
+    display: inline-block; /* Do u even flex, bro?? */
+    flex-grow: 1;
+}
+
+/* Userpic doesn't need extra spacing around it, and absent userpics
+   shouldn't take up space */
+#lj_controlstrip #lj_controlstrip_userpic,
+#lj_controlstrip #lj_controlstrip_loggedout_userpic
+{
+    flex-grow: 0;
+    padding: 0;
 }
 
 #lj_controlstrip a
 {
     font-family: Arial, sans-serif;
-    font-size: 11px;
     font-weight: normal;
-    line-height: 16.5px;
     letter-spacing: normal;
     text-decoration: none;
     font-variant: normal;
@@ -49,6 +56,12 @@ html body
 
 #lj_controlstrip a:hover {
     text-decoration: underline;
+}
+
+/* Don't add extra height at bottom of userpic box */
+#lj_controlstrip_userpic a {
+    display: block;
+    line-height: 0;
 }
 
 #lj_controlstrip img {
@@ -72,7 +85,7 @@ html body
     border: 0;
 }
 
-/* Make sure all form elements use default colors and control strip fonts */        
+/* Make sure all form elements use default colors and control strip fonts */
 #lj_controlstrip input
 {
     font-family: Arial, sans-serif;
@@ -102,58 +115,26 @@ html body
     margin: 0;
 }
 
-/* First cell */
-#lj_controlstrip_userpic
+#lj_controlstrip input#xc_user,
+#lj_controlstrip input#xc_password
 {
-    vertical-align: top;
-    width: 43px;
+    width: 7em;
 }
 
-/* Second cell */
-#lj_controlstrip_user
+#lj_controlstrip input#xc_remember
 {
-    text-align: left;
-    vertical-align: middle;
-    padding: 0 1em 0 1em;
-    width: auto;
+    height: 10px;
+    width: 10px;
 }
 
-/* Third cell */
-#lj_controlstrip_actionlinks
-{
-    text-align: left;
-    vertical-align: middle;
-    padding: 0 1em 0 1em;
-    width: auto;
-}
-
-/* Third cell first line */
 #lj_controlstrip_statustext
 {
     font-size: 12px;
     font-weight: bold;
 }
 
-/* Fourth cell */
-#lj_controlstrip_search
+/* Read/network page filter form */
+#lj_controlstrip_readfilter
 {
-    vertical-align: middle;
-    padding: 0 1em 0 1em;
-    white-space: nowrap;
-}
-
-/* Log in form */
-#lj_controlstrip_login
-{
-    vertical-align: middle;
-    padding-left: 1em;
-    width: 28em; 
-    white-space: nowrap;
-}
-
-/* First cell logged out */
-#lj_controlstrip_loggedout_userpic
-{
-    vertical-align: top;
-    width: 140px;
+    display: inline;
 }

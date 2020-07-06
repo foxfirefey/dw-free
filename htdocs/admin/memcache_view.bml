@@ -54,7 +54,6 @@ _c?>
      'talksubject:' => 3,
      'talkbody:' => 3,
      'logtext:' => 3,
-     's1pubstyc:' => 0,
      'popsyn:' => 0,
      'rate_eperr:' => 0,
      'rate:' => 0,
@@ -301,7 +300,7 @@ _c?>
  }
 
  $ret .= "<p>Enter your memcache query(-ies) below.</p>";
- $ret .= '<p>Here\'s the <a href="http://hg.dwscoalition.org/dw-free/file/tip/doc/raw/memcache-keys.txt">reference</a> of key names.</p>';
+ $ret .= '<p>Here\'s the <a href="https://github.com/dreamwidth/dw-free/blob/develop/doc/raw/memcache-keys.txt">reference</a> of key names.</p>';
  $ret .= "<p>Shortcuts: <blockquote>#username -> userid<br /> ##username -> cid:userid<br />(number) -> number/256 </blockquote></p>";
 
  $ret .= '<form method="post" action="memcache_view.bml">';
